@@ -1,0 +1,109 @@
+// -----------------------------------------------------------------------------
+//
+//  Scalax - The Scala Community Library
+//  Copyright (c) 2005-7 The Scalax Project. All rights reserved.
+//
+//  The primary distribution site is http://scalax.scalaforge.org/
+//
+//  This software is released under the terms of the Revised BSD License.
+//  There is NO WARRANTY.  See the file LICENSE for the full text.
+//
+// -----------------------------------------------------------------------------
+
+package scalax.io
+import java.io._
+import java.util.zip._
+
+class InputStreamExtras(s : InputStream) {
+	def slurp() = StreamHelp.slurp(s)
+	def pumpTo(d : OutputStream) = StreamHelp.pump(s, d)
+	def unzipTo(outdir : File) = StreamHelp.unzip(s, outdir)
+}
+
+class ReaderExtras(r : Reader) {
+	def pumpTo(d : Writer) = StreamHelp.pump(r, d)
+	def lines = StreamHelp.lines(r)
+}
+
+object StreamHelp
+{
+	/** Slurps the entire input stream into a byte array. */
+	def slurp(in : InputStream) : Array[Byte] = {
+		val out = new ByteArrayOutputStream
+		pump(in, out)
+		out.toByteArray()
+	}
+
+	/** Slurps the entire input stream into a string. */
+	def slurp(in : Reader) : String = {
+		val out = new StringWriter
+		pump(in, out)
+		out.toString()
+	}
+
+	/** Pumps all data from the input stream through to the output stream.
+	 * Returns the number of bytes transferred. */
+	def pump(in : InputStream, out : OutputStream) : Int = {
+		val buf = new Array[Byte](65536)
+		var len = in.read(buf)
+		var count = 0
+		while(len > -1) {
+			out.write(buf, 0, len)
+			count = count + len
+			len = in.read(buf)
+		}
+		count
+	}
+
+	/** Pumps all data from the reader through to the writer. Returns the
+	 * number of characters transferred. */
+	def pump(in : Reader, out : Writer) : Int = {
+		val buf = new Array[Char](65536)
+		var len = in.read(buf)
+		var count = 0
+		while(len > -1) {
+			out.write(buf, 0, len)
+			count = count + len
+			len = in.read(buf)
+		}
+		count
+	}
+
+	/** Iterates over the lines of the reader. */
+	def lines(in : Reader) : Iterator[String] = {
+		val br = new BufferedReader(in)
+		new Iterator[String] {
+			var n = br.readLine()
+			def hasNext = n != null
+			def next = {
+				val l = n
+				n = br.readLine()
+				if(n == null) br.close()
+				l
+			}
+		}
+	}
+
+	/** Unzips the contents of the supplied stream into the specified directory. */
+	def unzip(zip : InputStream, outdir : File) : Unit = {
+		val zis = new ZipInputStream(new BufferedInputStream(zip))
+		val buf = new Array[Byte](65536)
+		for(entry <- IteratorHelp.nonNull { zis.getNextEntry() }) {
+			val f = new File(outdir, entry.getName())
+			if(entry.isDirectory()) {
+				if(!f.mkdir())
+					throw new IOException("Couldn't create directory")
+			}
+			else {
+				val fos = new FileOutputStream(f)
+				val dest = new BufferedOutputStream(fos, 65536)
+				for(cnt <- IteratorHelp.nonNegative{ zis.read(buf) }) {
+					dest.write(buf, 0, cnt)
+				}
+				dest.flush()
+				dest.close()
+			}
+		}
+		zis.close()
+	}
+}

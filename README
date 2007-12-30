@@ -1,0 +1,32 @@
+  ----------------------------------------------------------------------------
+  
+    Scalax - The Scala Community Library
+    Copyright (c) 2005-7 The Scalax Project. All rights reserved.
+  
+    The primary distribution site is http://scalax.scalaforge.org/
+  
+    This software is released under the terms of the Revised BSD License.
+    There is NO WARRANTY.  See the file LICENSE for the full text.
+  
+  ----------------------------------------------------------------------------
+    
+    -- About --
+
+    The Scala Community Library (Scalax) is a nascent project to develop a
+    general utility library for the Scala language, as a companion to the
+    standard library.  All members of the Scala community are invited to
+    participate, by contributing code and by reviewing existing contributions.
+    Scalax is released under a BSD-style license, the same as Scala itself.
+
+    Please see http://scalax.scalaforge.org/ for more information.
+
+
+    -- Compiling --
+
+    Scalax depends only on the Scala compiler (latest stable release).  A
+    Makefile and Ant project are both provided.
+
+    To build using Ant, you will need to supply the location of your Scala
+    installation, e.g.:
+
+      ant -Dscala.home=/opt/scala
