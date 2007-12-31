@@ -44,5 +44,5 @@ class MonoidWithPlusIterableExtras[A](i : Iterable[A])(monoid : MonoidWithPlus[A
 }
 
 class MonoidWithJoinIterableExtras[A](i : Iterable[A])(monoid : MonoidWithJoin[A]) {
-	def concat = monoid.concat(i)
+	def concatenate = monoid.concat(i)
 }
