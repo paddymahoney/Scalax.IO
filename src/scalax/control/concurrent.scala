@@ -10,8 +10,9 @@
 //
 // -----------------------------------------------------------------------------
 
-package scalax.io
+package scalax.control
 import scala.collection.mutable._
+import scala.collection.jcl.MapWrapper
 import java.util.concurrent.atomic._
 import java.util.concurrent.{ConcurrentHashMap => JConcurrentHashMap, _}
 
@@ -27,7 +28,8 @@ final class AtomicCell[A](init : A) {
 		ref.weakCompareAndSet(expect, update)
 }
 
-class ConcurrentHashMap[K,V](val jmap : JConcurrentHashMap) extends JavaMapAdaptor[K,V](jmap) {
+class ConcurrentHashMap[K,V](val jmap : JConcurrentHashMap) extends MapWrapper[K,V] {
+	def underlying = jmap
 	def this() = this(new JConcurrentHashMap(2))
 	def putIfAbsent(k : K, v : V) : Option[V] = {
 		val r = jmap.putIfAbsent(k, v)
@@ -86,7 +88,6 @@ class ConcurrentQueue[A](val jq : LinkedBlockingQueue) {
 
 /** A thread-safe linked list implementation in which all operations except
  * '-=' are unsynchronized. */
-// FIXME: This code is untested
 class ConcurrentLinkedList[A] extends Seq[A] {
 	private trait Node {
 		def elem : A
@@ -133,7 +134,10 @@ class ConcurrentLinkedList[A] extends Seq[A] {
 	def length : Int = {
 		var count = 0
 		var curr = sentinel.get.next.get
-		while(!curr.isSentinel) count += 1
+		while(!curr.isSentinel) {
+			count += 1
+			curr = curr.next.get
+		}
 		count
 	}
 
@@ -159,7 +163,7 @@ class ConcurrentLinkedList[A] extends Seq[A] {
 		}
 	}
 
-	def clear : Unit = {
+	def clear() : Unit = {
 		sentinel.set(new SentinelNode)
 	}
 }

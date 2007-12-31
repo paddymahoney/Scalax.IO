@@ -14,7 +14,7 @@ import scalax.data._
 import scalax.io._
 import scalax.testing._
 
-object CommandLineTests extends TestSuite("Command line") {
+object CommandLineTests extends TestSuite("CommandLine") {
 	object Test1 extends CommandLineParser {
 		val opt1 = new StringOption('a', "abc", "ABC") with AllowAllButSelf
 		val opt2 = new StringOption('b', "bcd", "BCD") with AllowAll

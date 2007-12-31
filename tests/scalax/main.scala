@@ -14,4 +14,5 @@ import scalax.testing._
 
 object ScalaxTests extends TestSuite("Scalax") {
 	include(CommandLineTests)
+	include(ConcurrentLinkedListTests)
 }

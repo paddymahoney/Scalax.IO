@@ -15,6 +15,7 @@ import scala.collection.mutable._
 
 object Implicits {
 	implicit def stringExtras(s : String) = new StringExtras(s)
+	implicit def intExtras(i : Int) = new IntExtras(i)
 
 	implicit object IntProps extends Ord[Int] with MonoidWithPlus[Int] {
 		def eq(a : Int, b : Int) = a == b
