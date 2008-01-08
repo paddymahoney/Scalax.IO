@@ -87,7 +87,7 @@ class TestSuite(val name : String) extends TestCase {
 		(p, n)
 	}
 
-	def main(argv : Array[String]) = {
+	def main(argv : Array[String]) {
 		val r =
 			if(argv.length > 0) runThese(tests.filter(t => argv.contains(t.name)))
 			else run()
