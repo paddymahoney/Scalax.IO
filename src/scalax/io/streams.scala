@@ -71,7 +71,10 @@ object StreamHelp
 
 	/** Iterates over the lines of the reader. */
 	def lines(in : Reader) : Iterator[String] = {
-		val br = new BufferedReader(in)
+		val br = in match {
+			case b : BufferedReader => b
+			case _ => new BufferedReader(in)
+		}
 		new Iterator[String] {
 			var n = br.readLine()
 			def hasNext = n != null
