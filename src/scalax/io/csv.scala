@@ -20,6 +20,10 @@ import scalax.data._
  * representing each row. Note that the underlying Reader should be closed
  * manually (or by a ManagedResource) if iteration is not completed. */
 class CsvIterator(csv : Reader) extends Iterator[Array[String]] {
+	/** The separator character, a comma by default, but could be overridden to
+	 * any character which is not whitespace or '"'. */
+	def sep = ','
+
 	private val br = new BufferedReader(csv)
 	private var nextLine = br.readLine()
 	if(nextLine == null) br.close()
@@ -65,7 +69,7 @@ class CsvIterator(csv : Reader) extends Iterator[Array[String]] {
 					}
 				}
 				i += 1
-				while(i < len && chars(i) != ',') {
+				while(i < len && chars(i) != sep) {
 					if(!Character.isWhitespace(chars(i)))
 						throw new ParseException(lineNo+":"+(i + 1)+
 								": Garbage after close quote", lineNo)
@@ -75,7 +79,7 @@ class CsvIterator(csv : Reader) extends Iterator[Array[String]] {
 			} else {
 				// Non-quoted field
 				val start = i
-				while(i < len && chars(i) != ',') i += 1
+				while(i < len && chars(i) != sep) i += 1
 				var end = i - 1
 				while(end >= start && Character.isWhitespace(chars(end))) end = end - 1
 				fields += new String(chars, start, end - start + 1)
