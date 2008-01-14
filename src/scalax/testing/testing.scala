@@ -12,6 +12,7 @@
 
 package scalax.testing
 import scala.collection.mutable._
+import scalax.data.Implicits._
 
 class TestFail(msg : String) extends Exception(msg)
 
@@ -23,15 +24,15 @@ trait TestCase {
 class TestSuite(val name : String) extends TestCase {
 	class SingleTestCase(val name : String, code : => Unit) extends TestCase {
 		def run() = {
-			print("- "+name + "... ")
+			print(("- "+name + "... ").pad(60, ' '))
 			try {
 				code
 				println("PASSED")
 				(1, 1)
 			} catch {
 				case e : TestFail => {
-					if(e.getMessage() == "") println("FAILED")
-					else println("FAILED: "+e.getMessage())
+					println("FAILED")
+					if(e.getMessage() != "") println("\n    "+e.getMessage())
 					(0, 1)
 				}
 				case e : Throwable => {
@@ -61,13 +62,13 @@ class TestSuite(val name : String) extends TestCase {
 	def deny(x : => Boolean) = assert("", !x)
 	def deny(msg : String, x : => Boolean) = assert(msg, !x)
 	def assertEq(msg : String, x : Any, y : Any) =
-		if(x != y) throw new TestFail(msg+": "+x+" != "+y)
+		if(x != y) throw new TestFail(msg+":\n    "+x+"\n != "+y)
 	def assertEq(x : Any, y : Any) =
-		if(x != y) throw new TestFail(x+" != "+y)
+		if(x != y) throw new TestFail(x+"\n != "+y)
 	def assertNe(msg : String, x : Any, y : Any) =
-		if(x == y) throw new TestFail(msg+": "+x+" == "+y)
+		if(x == y) throw new TestFail(msg+":\n    "+x+"\n == "+y)
 	def assertNe(x : Any, y : Any) =
-		if(x == y) throw new TestFail(x+" == "+y)
+		if(x == y) throw new TestFail(x+"\n == "+y)
 
 	def run() = {
 		println("Running "+name+"...")

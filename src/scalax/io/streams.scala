@@ -23,6 +23,7 @@ class InputStreamExtras(s : InputStream) {
 class ReaderExtras(r : Reader) {
 	def pumpTo(d : Writer) = StreamHelp.pump(r, d)
 	def lines = StreamHelp.lines(r)
+	def ensureBuffered = StreamHelp.ensureBuffered(r)
 }
 
 object StreamHelp
@@ -71,10 +72,7 @@ object StreamHelp
 
 	/** Iterates over the lines of the reader. */
 	def lines(in : Reader) : Iterator[String] = {
-		val br = in match {
-			case b : BufferedReader => b
-			case _ => new BufferedReader(in)
-		}
+		val br = ensureBuffered(in)
 		new Iterator[String] {
 			var n = br.readLine()
 			def hasNext = n != null
@@ -86,6 +84,13 @@ object StreamHelp
 			}
 		}
 	}
+
+	/** Wrap this Reader into a BufferedReader if it isn't one already. */
+	def ensureBuffered(r : Reader) : BufferedReader =
+		r match {
+			case b : BufferedReader => b
+			case _ => new BufferedReader(r)
+		}
 
 	/** Unzips the contents of the supplied stream into the specified directory. */
 	def unzip(zip : InputStream, outdir : File) : Unit = {

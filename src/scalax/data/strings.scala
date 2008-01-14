@@ -24,6 +24,7 @@ class StringExtras(s : String) {
 	def uncapitalize = StringHelp.uncapitalize(s)
 	def toBoolean = StringHelp.toBoolean(s)
 	def toFile = new File(s)
+	def pad(l : Int, c : Char) = StringHelp.pad(s, l, c)
 
 	def toOptInt =
 		try {
@@ -104,5 +105,19 @@ object StringHelp {
 			case "true" | "yes" | "1" | "on" | "t" | "y" => true
 			case "false" | "no" | "0" | "off" | "f" | "n" => false
 			case _ => throw new NumberFormatException("Unknown truth value: "+s)
+		}
+
+	/** Pads the string up to the given length using the given character. */
+	def pad(s : String, l : Int, c : Char) : String =
+		if(s.length >= l) {
+			s
+		} else {
+			val b = new StringBuilder(s)
+			var i = s.length
+			while(i < l) {
+				i += 1
+				b += c
+			}
+			b.toString
 		}
 }
