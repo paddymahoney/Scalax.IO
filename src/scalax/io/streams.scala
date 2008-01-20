@@ -13,6 +13,7 @@
 package scalax.io
 import java.io._
 import java.util.zip._
+import scalax.data._
 
 class InputStreamExtras(s : InputStream) {
 	def slurp() = StreamHelp.slurp(s)

@@ -10,7 +10,7 @@
 //
 // -----------------------------------------------------------------------------
 
-package scalax.io
+package scalax.data
 import java.sql._
 
 /** Functions which wrap various Java-style generators into Iterators which
