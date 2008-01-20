@@ -16,16 +16,7 @@ package scalax.data
  * Note that consequently the provided apply and length methods are O(n). */
 trait IteratorSeq[+A] extends Seq[A] {
 	def apply(i : Int) : A = elements.drop(i).next
-
-	def length = {
-		var i = 0
-		val iter = elements
-		while(iter.hasNext) {
-			iter.next
-			i += 1
-		}
-		i
-	}
+	def length = IteratorHelp.length(elements)
 
 	// Default implementation would be O(n)
 	override def isEmpty = !elements.hasNext

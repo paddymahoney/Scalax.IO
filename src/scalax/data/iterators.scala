@@ -88,4 +88,13 @@ object IteratorHelp {
 		}
 		res
 	}
+
+	def length(iter : Iterator[Any]) = {
+		var i = 0
+		while(iter.hasNext) {
+			i += 1
+			iter.next
+		}
+		i
+	}
 }
