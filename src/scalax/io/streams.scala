@@ -60,7 +60,7 @@ object StreamHelp
 	/** Pumps all data from the reader through to the writer. Returns the
 	 * number of characters transferred. */
 	def pump(in : Reader, out : Writer) : Int = {
-		val buf = new Array[Char](65536)
+		val buf = new Array[Char](32768)
 		var len = in.read(buf)
 		var count = 0
 		while(len > -1) {

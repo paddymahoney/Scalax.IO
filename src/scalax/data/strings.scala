@@ -24,7 +24,8 @@ class StringExtras(s : String) {
 	def uncapitalize = StringHelp.uncapitalize(s)
 	def toBoolean = StringHelp.toBoolean(s)
 	def toFile = new File(s)
-	def pad(l : Int, c : Char) = StringHelp.pad(s, l, c)
+	def pad(l : Int, c : Char) : String = StringHelp.pad(s, l, c)
+	def pad(l : Int) : String = pad(l, ' ')
 
 	def toOptInt =
 		try {
