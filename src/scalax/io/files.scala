@@ -23,10 +23,10 @@ class FileExtras(file : File) {
 
 	/** Obtains a BufferedReader using the system default charset. */
 	def reader =
-		new ManagedResource[BufferedReader] {
-			def open() =
+		new UntranslatedManagedResource[BufferedReader] {
+			def unsafeOpen() =
 				new BufferedReader(new InputStreamReader(new FileInputStream(file)))
-			def close(r : BufferedReader) =
+			def unsafeClose(r : BufferedReader) =
 				r.close()
 		}
 
@@ -34,47 +34,47 @@ class FileExtras(file : File) {
 	def reader(charset : String) = {
 		// Do this lookup before opening the file, since it might fail.
 		val cs = Charset.forName(charset)
-		new ManagedResource[BufferedReader] {
-			def open() =
+		new UntranslatedManagedResource[BufferedReader] {
+			def unsafeOpen() =
 				new BufferedReader(new InputStreamReader(new FileInputStream(file), cs))
-			def close(r : BufferedReader) =
+			def unsafeClose(r : BufferedReader) =
 				r.close()
 		}
 	}
 
 	/** Obtains a PrintWriter using the system default charset. */
 	def writer =
-		new ManagedResource[PrintWriter] {
-			def open() =
+		new UntranslatedManagedResource[PrintWriter] {
+			def unsafeOpen() =
 				new PrintWriter(file)
-			def close(r : PrintWriter) =
+			def unsafeClose(r : PrintWriter) =
 				r.close()
 		}
 
 	/** Obtains a PrintWriter using the supplied charset. */
 	def writer(charset : String) =
-		new ManagedResource[PrintWriter] {
-			def open() =
+		new UntranslatedManagedResource[PrintWriter] {
+			def unsafeOpen() =
 				new PrintWriter(file, charset)
-			def close(r : PrintWriter) =
+			def unsafeClose(r : PrintWriter) =
 				r.close()
 		}
 
 	/** Obtains a BufferedInputStream. */
 	def inputStream =
-		new ManagedResource[BufferedInputStream] {
-			def open() =
+		new UntranslatedManagedResource[BufferedInputStream] {
+			def unsafeOpen() =
 				new BufferedInputStream(new FileInputStream(file))
-			def close(s : BufferedInputStream) =
+			def unsafeClose(s : BufferedInputStream) =
 				s.close()
 		}
 
 	/** Obtains a BufferedOutputStream. */
 	def outputStream =
-		new ManagedResource[BufferedOutputStream] {
-			def open() =
+		new UntranslatedManagedResource[BufferedOutputStream] {
+			def unsafeOpen() =
 				new BufferedOutputStream(new FileOutputStream(file))
-			def close(s : BufferedOutputStream) =
+			def unsafeClose(s : BufferedOutputStream) =
 				s.close()
 		}
 
