@@ -89,6 +89,22 @@ class FileExtras(file : File) {
 	 * character set. */
 	def slurp(charset : String) = for(r <- reader(charset)) yield StreamHelp.slurp(r)
 
+	/** Views the file as a sequence of lines. */
+	def lines =
+		new ManagedSequence[String] {
+			type Handle = Reader
+			val resource = reader
+			def iterator(v : Reader) = StreamHelp.lines(v)
+		}
+
+	/** Views the file as a sequence of lines. */
+	def lines(charset : String) =
+		new ManagedSequence[String] {
+			type Handle = Reader
+			val resource = reader(charset)
+			def iterator(v : Reader) = StreamHelp.lines(v)
+		}
+
 	/** Writes the supplied string to the file, replacing any existing content,
 	 * using the system default character set. */
 	def write(s : String) = for(w <- writer) w.write(s)
