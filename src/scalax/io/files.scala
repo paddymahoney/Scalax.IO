@@ -12,6 +12,7 @@
 
 package scalax.io
 import java.io._
+import java.nio.channels._
 import java.nio.charset._
 import java.util.regex._
 import scalax.control._
@@ -76,6 +77,17 @@ class FileExtras(file : File) {
 				new BufferedOutputStream(new FileOutputStream(file))
 			def unsafeClose(s : BufferedOutputStream) =
 				s.close()
+		}
+
+	/** Obtains a FileChannel. */
+	def channel =
+		new ManagedResource[FileChannel] {
+			type Handle = FileInputStream
+			def unsafeOpen() =
+				new FileInputStream(file)
+			def unsafeClose(s : Handle) =
+				s.close()
+			def translate(s : Handle) = s.getChannel
 		}
 
 	/** Attempts to return the file extension. */
@@ -149,19 +161,11 @@ object FileHelp {
 	}
 
 	/** Copies a file. */
-	def copy(src : File, dest : File) : Unit = {
-		val in = new FileInputStream(src).getChannel
-		try {
-			val out = new FileOutputStream(dest).getChannel
-			try {
-				in.transferTo(0, in.size, out)
-			} finally {
-				out.close()
-			}
-		} finally {
-			in.close()
-		}
-	}
+	def copy(src : File, dest : File) : Unit =
+		for {
+			in <- new FileExtras(src).channel
+			out <- new FileExtras(dest).channel
+		} in.transferTo(0, in.size, out)
 
 	/** Moves a file, by rename if possible, otherwise by copy-and-delete. */
 	def move(src : File, dest : File) : Unit = {
