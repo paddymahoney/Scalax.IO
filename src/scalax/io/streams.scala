@@ -1,7 +1,7 @@
 // -----------------------------------------------------------------------------
 //
 //  Scalax - The Scala Community Library
-//  Copyright (c) 2005-7 The Scalax Project. All rights reserved.
+//  Copyright (c) 2005-8 The Scalax Project. All rights reserved.
 //
 //  The primary distribution site is http://scalax.scalaforge.org/
 //
@@ -13,6 +13,7 @@
 package scalax.io
 import java.io._
 import java.util.zip._
+import scalax.data._
 
 class InputStreamExtras(s : InputStream) {
 	def slurp() = StreamHelp.slurp(s)
@@ -59,7 +60,7 @@ object StreamHelp
 	/** Pumps all data from the reader through to the writer. Returns the
 	 * number of characters transferred. */
 	def pump(in : Reader, out : Writer) : Int = {
-		val buf = new Array[Char](65536)
+		val buf = new Array[Char](32768)
 		var len = in.read(buf)
 		var count = 0
 		while(len > -1) {

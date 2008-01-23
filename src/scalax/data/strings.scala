@@ -1,7 +1,7 @@
 // -----------------------------------------------------------------------------
 //
 //  Scalax - The Scala Community Library
-//  Copyright (c) 2005-7 The Scalax Project. All rights reserved.
+//  Copyright (c) 2005-8 The Scalax Project. All rights reserved.
 //
 //  The primary distribution site is http://scalax.scalaforge.org/
 //
@@ -24,7 +24,8 @@ class StringExtras(s : String) {
 	def uncapitalize = StringHelp.uncapitalize(s)
 	def toBoolean = StringHelp.toBoolean(s)
 	def toFile = new File(s)
-	def pad(l : Int, c : Char) = StringHelp.pad(s, l, c)
+	def pad(l : Int, c : Char) : String = StringHelp.pad(s, l, c)
+	def pad(l : Int) : String = pad(l, ' ')
 
 	def toOptInt =
 		try {

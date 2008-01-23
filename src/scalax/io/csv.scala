@@ -1,7 +1,7 @@
 // -----------------------------------------------------------------------------
 //
 //  Scalax - The Scala Community Library
-//  Copyright (c) 2005-7 The Scalax Project. All rights reserved.
+//  Copyright (c) 2005-8 The Scalax Project. All rights reserved.
 //
 //  The primary distribution site is http://scalax.scalaforge.org/
 //
@@ -14,6 +14,7 @@ package scalax.io
 import java.io._
 import java.text._
 import scala.collection.mutable._
+import scalax.control._
 import scalax.data._
 import scalax.io.Implicits._
 
@@ -124,6 +125,25 @@ class CsvIterator(csv : Reader) extends Iterator[Array[String]] {
 	}
 }
 
+class CsvFile(val resource : ManagedResource[Reader])
+		extends ManagedSequence[Array[String]] { self =>
+	def this(f : File) = this(f.reader)
+	def this(f : File, cs : String) = this(f.reader(cs))
+
+	def sep = ','
+	def arity = 0
+	def comments = false
+	def commentStart = '#'
+
+	type Handle = Reader
+	protected def iterator(v : Reader) = new CsvIterator(v) {
+		override def sep = self.sep
+		override def arity = self.arity
+		override def comments = self.comments
+		override def commentStart = self.commentStart
+	}
+}
+
 class KeyValueIterator(r : Reader) extends Iterator[(String, String)] {
 	private val csv = new CsvIterator(r) {
 		override def sep = '='
@@ -136,4 +156,13 @@ class KeyValueIterator(r : Reader) extends Iterator[(String, String)] {
 		val a = csv.next
 		(a(0), a(1))
 	}
+}
+
+class KeyValueFile(val resource : ManagedResource[Reader])
+		extends ManagedSequence[(String, String)] { self =>
+	def this(f : File) = this(f.reader)
+	def this(f : File, cs : String) = this(f.reader(cs))
+
+	type Handle = Reader
+	protected def iterator(v : Reader) = new KeyValueIterator(v)
 }

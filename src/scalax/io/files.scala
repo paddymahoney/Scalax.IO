@@ -1,7 +1,7 @@
 // -----------------------------------------------------------------------------
 //
 //  Scalax - The Scala Community Library
-//  Copyright (c) 2005-7 The Scalax Project. All rights reserved.
+//  Copyright (c) 2005-8 The Scalax Project. All rights reserved.
 //
 //  The primary distribution site is http://scalax.scalaforge.org/
 //
@@ -12,6 +12,7 @@
 
 package scalax.io
 import java.io._
+import java.nio.channels._
 import java.nio.charset._
 import java.util.regex._
 import scalax.control._
@@ -23,10 +24,10 @@ class FileExtras(file : File) {
 
 	/** Obtains a BufferedReader using the system default charset. */
 	def reader =
-		new ManagedResource[BufferedReader] {
-			def open() =
+		new UntranslatedManagedResource[BufferedReader] {
+			def unsafeOpen() =
 				new BufferedReader(new InputStreamReader(new FileInputStream(file)))
-			def close(r : BufferedReader) =
+			def unsafeClose(r : BufferedReader) =
 				r.close()
 		}
 
@@ -34,48 +35,59 @@ class FileExtras(file : File) {
 	def reader(charset : String) = {
 		// Do this lookup before opening the file, since it might fail.
 		val cs = Charset.forName(charset)
-		new ManagedResource[BufferedReader] {
-			def open() =
+		new UntranslatedManagedResource[BufferedReader] {
+			def unsafeOpen() =
 				new BufferedReader(new InputStreamReader(new FileInputStream(file), cs))
-			def close(r : BufferedReader) =
+			def unsafeClose(r : BufferedReader) =
 				r.close()
 		}
 	}
 
 	/** Obtains a PrintWriter using the system default charset. */
 	def writer =
-		new ManagedResource[PrintWriter] {
-			def open() =
+		new UntranslatedManagedResource[PrintWriter] {
+			def unsafeOpen() =
 				new PrintWriter(file)
-			def close(r : PrintWriter) =
+			def unsafeClose(r : PrintWriter) =
 				r.close()
 		}
 
 	/** Obtains a PrintWriter using the supplied charset. */
 	def writer(charset : String) =
-		new ManagedResource[PrintWriter] {
-			def open() =
+		new UntranslatedManagedResource[PrintWriter] {
+			def unsafeOpen() =
 				new PrintWriter(file, charset)
-			def close(r : PrintWriter) =
+			def unsafeClose(r : PrintWriter) =
 				r.close()
 		}
 
 	/** Obtains a BufferedInputStream. */
 	def inputStream =
-		new ManagedResource[BufferedInputStream] {
-			def open() =
+		new UntranslatedManagedResource[BufferedInputStream] {
+			def unsafeOpen() =
 				new BufferedInputStream(new FileInputStream(file))
-			def close(s : BufferedInputStream) =
+			def unsafeClose(s : BufferedInputStream) =
 				s.close()
 		}
 
 	/** Obtains a BufferedOutputStream. */
 	def outputStream =
-		new ManagedResource[BufferedOutputStream] {
-			def open() =
+		new UntranslatedManagedResource[BufferedOutputStream] {
+			def unsafeOpen() =
 				new BufferedOutputStream(new FileOutputStream(file))
-			def close(s : BufferedOutputStream) =
+			def unsafeClose(s : BufferedOutputStream) =
 				s.close()
+		}
+
+	/** Obtains a FileChannel. */
+	def channel =
+		new ManagedResource[FileChannel] {
+			type Handle = FileInputStream
+			def unsafeOpen() =
+				new FileInputStream(file)
+			def unsafeClose(s : Handle) =
+				s.close()
+			def translate(s : Handle) = s.getChannel
 		}
 
 	/** Attempts to return the file extension. */
@@ -88,6 +100,22 @@ class FileExtras(file : File) {
 	/** Slurps the entire input file into a string, using the supplied
 	 * character set. */
 	def slurp(charset : String) = for(r <- reader(charset)) yield StreamHelp.slurp(r)
+
+	/** Views the file as a sequence of lines. */
+	def lines =
+		new ManagedSequence[String] {
+			type Handle = Reader
+			val resource = reader
+			def iterator(v : Reader) = StreamHelp.lines(v)
+		}
+
+	/** Views the file as a sequence of lines. */
+	def lines(charset : String) =
+		new ManagedSequence[String] {
+			type Handle = Reader
+			val resource = reader(charset)
+			def iterator(v : Reader) = StreamHelp.lines(v)
+		}
 
 	/** Writes the supplied string to the file, replacing any existing content,
 	 * using the system default character set. */
@@ -133,19 +161,11 @@ object FileHelp {
 	}
 
 	/** Copies a file. */
-	def copy(src : File, dest : File) : Unit = {
-		val in = new FileInputStream(src).getChannel
-		try {
-			val out = new FileOutputStream(dest).getChannel
-			try {
-				in.transferTo(0, in.size, out)
-			} finally {
-				out.close()
-			}
-		} finally {
-			in.close()
-		}
-	}
+	def copy(src : File, dest : File) : Unit =
+		for {
+			in <- new FileExtras(src).channel
+			out <- new FileExtras(dest).channel
+		} in.transferTo(0, in.size, out)
 
 	/** Moves a file, by rename if possible, otherwise by copy-and-delete. */
 	def move(src : File, dest : File) : Unit = {

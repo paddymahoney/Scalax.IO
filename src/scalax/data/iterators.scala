@@ -1,7 +1,7 @@
 // -----------------------------------------------------------------------------
 //
 //  Scalax - The Scala Community Library
-//  Copyright (c) 2005-7 The Scalax Project. All rights reserved.
+//  Copyright (c) 2005-8 The Scalax Project. All rights reserved.
 //
 //  The primary distribution site is http://scalax.scalaforge.org/
 //
@@ -10,7 +10,7 @@
 //
 // -----------------------------------------------------------------------------
 
-package scalax.io
+package scalax.data
 import java.sql._
 
 /** Functions which wrap various Java-style generators into Iterators which
@@ -87,5 +87,14 @@ object IteratorHelp {
 			res = f(iter.next)
 		}
 		res
+	}
+
+	def length(iter : Iterator[Any]) = {
+		var i = 0
+		while(iter.hasNext) {
+			i += 1
+			iter.next
+		}
+		i
 	}
 }

@@ -25,7 +25,7 @@ tmp/built: tmp/exists src/scalax/*/*.scala
 
 tmp/docs-built: tmp/exists src/scalax/*/*.scala
 	mkdir -p dist/api
-	scaladoc -d dist/api -doctitle Scalax -windowtitle Scalax -linksource -footer "Copyright (c) 2007 The Scalax Project. All Rights Reserved." src/scalax/*/*.scala
+	scaladoc -d dist/api -doctitle Scalax -windowtitle Scalax -linksource -footer "Copyright (c) 2005-8 The Scalax Project. All Rights Reserved." src/scalax/*/*.scala
 	touch tmp/docs-built
 
 tmp/tests-built: tmp/built tests/scalax/*.scala tests/scalax/*/*.scala
