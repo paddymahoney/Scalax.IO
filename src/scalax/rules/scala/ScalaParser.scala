@@ -37,7 +37,7 @@ import ScalaParser._
   * @author Andrew Foggin, based on Scala Language Specification
  */
 abstract class ScalaParser[T <: Input[Char, T] with Memoisable[T]] extends Scanner with MemoisableRules {
-  type Context = ScalaInput[T]
+  type S = ScalaInput[T]
   
   /** Treat a symbol as a rule that matches the corresponding keyword */
   implicit def symbolToKeyword(symbol : Symbol) : Rule[String] = reservedId filter (_ == symbol.name)

@@ -33,14 +33,14 @@ class ReaderInput(reader : Reader, val index : Int) extends Input[Char, ReaderIn
   
   def this(reader : Reader) = this(reader, 0)
 
-  override protected def onSuccess[T](key : AnyRef,  result : Success[T, ReaderInput]) { 
+  override protected def onSuccess[T](key : AnyRef,  result : Success[(T, ReaderInput)]) { 
     //println(key + " -> " + result) 
   }
 
   lazy val next = reader.read() match {
     case -1 => 
       //println("<EOF>@" + index)
-      Failure[ReaderInput]
+      Failure
     case ch => 
       //println(ch.asInstanceOf[Char] + "@" + index)
       Success(ch.asInstanceOf[Char], new ReaderInput(reader, index + 1))

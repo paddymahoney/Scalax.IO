@@ -1,13 +1,13 @@
 package scalax.rules
 
 trait IncrementalScanner extends Scanner with MemoisableRules {
-  type Context <: IncrementalInput[Char, Context]
+  type S <: IncrementalInput[Char, S]
 }
 
 class DefaultIncrementalInput extends IncrementalInput[Char, DefaultIncrementalInput] {
   def element = new DefaultIncrementalInput
 
-  override protected def onSuccess[T](key : AnyRef,  result : Success[T, DefaultIncrementalInput]) { 
+  override protected def onSuccess[T](key : AnyRef,  result : Success[(T, DefaultIncrementalInput)]) { 
     if(DefaultIncrementalInput.debug) println(key + " -> " + result) 
   }
 }
@@ -21,7 +21,7 @@ trait IncrementalInput[A, Context <: IncrementalInput[A, Context]]
     with DefaultMemoisable[Context] 
     with Ordered[Context] { self : Context =>
 
-  var next : Result[A, Context] = Failure[Context]
+  var next : Result[(A, Context)] = Failure
   var index : Int = 0
 
   /** Create a new element. */

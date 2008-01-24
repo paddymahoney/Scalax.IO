@@ -1,6 +1,8 @@
 package scalax.rules.example
 
 trait ArithmeticEvaluator extends IncrementalScanner {
+  type S = DefaultIncrementalInput
+  
   lazy val expr : Rule[Int] = term ~*~ (op('+', _ + _) | op('-', _ - _))
   lazy val term : Rule[Int] = factor ~*~ (op('*', _ * _) | op('/', _ / _))
   lazy val factor : Rule[Int] = memo("factor", trim(number | '(' -~ expr ~- ')'))

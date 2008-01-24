@@ -15,11 +15,11 @@ case class App(function : Term, arg : Term) extends Term
 
 
 class BindingRules[T] extends Rules {
-  type Context = _root_.scala.collection.immutable.Map[Name, T]
-  val empty : Context = _root_.scala.collection.immutable.Map.empty[Name, T]
+  type S = _root_.scala.collection.immutable.Map[Name, T]
+  val empty : S = _root_.scala.collection.immutable.Map.empty[Name, T]
   
-  def bind(name : Name, value : T) = createRule { ctx => Success(value, ctx(name) = value) }
-  def boundValue(name : Name) = createRule { ctx => if (ctx.contains(name)) Success(ctx(name), ctx) else Failure[Context] }
+  def bind(name : Name, value : T) = rule { ctx => Success(value, ctx(name) = value) }
+  def boundValue(name : Name) = rule { ctx => if (ctx.contains(name)) Success(ctx(name), ctx) else Failure }
 }
 
 class Typer extends BindingRules[Type] {

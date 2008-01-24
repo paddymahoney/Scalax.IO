@@ -2,16 +2,16 @@ package scalax.rules.scala.test
 
 trait TestScanner extends Scanner with Application {
 
-  def input(string : String) : Context
+  def input(string : String) : S
   
-  def checkSuccess[A](input : String, result : Result[A], expected : A) {
+  def checkSuccess[A](input : String, result : Result[(A, S)], expected : A) {
     result match {
       case Success(actual, rest) if actual == expected => ()
       case actual => fail(input, actual, expected, "")
     }
   }
   
-  def check[A](input : String, actual : Result[A], expected : A, rest : String) {
+  def check[A](input : String, actual : Result[(A, S)], expected : A, rest : String) {
     actual match {
       case Success(ea, es) => if (ea != expected && !es.mkString("").equals(rest)) 
         fail(input, actual, expected, rest)
@@ -19,7 +19,7 @@ trait TestScanner extends Scanner with Application {
     }
   }
   
-  def fail[A](input : String, actual : Result[A], expected : A, rest : String) {
+  def fail[A](input : String, actual : Result[(A, S)], expected : A, rest : String) {
     actual match {
       case Success(result, s) =>  error ("Input: " + input + 
         "\nExpected success: " + expected + 
@@ -36,7 +36,7 @@ trait TestScanner extends Scanner with Application {
   def checkFailure[A](rule : Rule[A])(inputs : String *) {
     for (string <- inputs) {
       val actual = rule(input(string))
-      if (actual.isSuccess) error ("Input: " + string + 
+      if (actual != Failure) error ("Input: " + string + 
         "\nExpected Failure" + 
         "\nActual result: " + actual)
     }
