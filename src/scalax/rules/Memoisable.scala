@@ -19,8 +19,7 @@ trait DefaultMemoisable[Context <: Memoisable[Context]] extends Memoisable[Conte
   protected val map = new HashMap[AnyRef, Result[(Any, Context)]]
 
   def memo[T](key : AnyRef, f : Context => Result[(T, Context)]) = {
-    compute(key, f)
-    //map.getOrElseUpdate(key, compute(key, f)).asInstanceOf[Result[(T, Context)]]
+    map.getOrElseUpdate(key, compute(key, f)).asInstanceOf[Result[(T, Context)]]
   }
   
   protected def compute[T](key : AnyRef, f : Context => Result[(T, Context)]) = f(this) match {
