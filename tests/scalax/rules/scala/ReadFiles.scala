@@ -4,9 +4,9 @@ import java.io.{BufferedReader, File, FileReader, Reader}
 
 
 object ReadFiles extends ScalaParser[ReaderInput] with Application {
-  //process(new File("src/net/foggin/rules"))
+  //process(new File("src/scalax/rules"))
   process(new File("../scala-trunk/src/compiler"))
-  //process(new File("src/net/foggin/rules/scala/test/TestIncrementalScalaParser.scala"))
+  //process(new File("tests/scalax/rules/scala/TestIncrementalScalaParser.scala"))
   //process(new File("../scala-trunk/src/compiler/scala/tools/nsc/doc/DocUtil.scala"))
   
   def process(file : File) {
