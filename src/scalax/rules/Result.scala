@@ -4,7 +4,7 @@ package scalax.rules;
  */
 class RuleException[Context](val context : Context, message : String) extends Exception(message)
 
-object Result extends Monads {
+object Result extends MonadsWithZero {
   type M[+A] = Result[A]
   
   def unit[A](a : => A) = Success(a)
@@ -16,7 +16,7 @@ object Result extends Monads {
  *
  * @author Andrew Foggin
  */
-sealed abstract class Result[+A] extends Result.Monad[A] with Result.OrElse[A]
+sealed abstract class Result[+A] extends Result.MonadWithZero[A] with Result.OrElse[A]
       
 /** 
  * Result of a rule that was successfully applied.  

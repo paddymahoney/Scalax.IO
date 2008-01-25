@@ -5,7 +5,6 @@ trait Monads {
   type M[+A]
   
   def unit[A](a : => A) : M[A]
-  def zero : M[Nothing] = error("zero not defined")
   
   trait Functor[+A] { self : M[A] =>
     def map[B](f : A => B) : M[B]
@@ -14,13 +13,21 @@ trait Monads {
   trait Monad[+A] extends Functor[A] { self : M[A] =>
     def flatMap[B](f : A => M[B]) : M[B]
     def map[B](f : A => B) = flatMap { a => unit(f(a)) }
-    def filter[B >: A](f : A => Boolean) = flatMap { a => if (f(a)) unit(a) else zero }
   }
 
   trait Plus[+A] { self : M[A] =>
     def plus[B >: A](other : => M[B]) : M[B]
   }
+}
+
+
+trait MonadsWithZero extends Monads {
+  def zero : M[Nothing]
   
+  trait MonadWithZero[+A] extends Monad[A] { self : M[A] =>
+    def filter[B >: A](f : A => Boolean) = flatMap { a => if (f(a)) unit(a) else zero }
+  }
+
   trait OrElse[+A] { self : M[A] =>
     def orElse[B >: A](other : => M[B]) : M[B]
   }
@@ -52,13 +59,13 @@ trait StateReader extends Monads {
 
   //This leads for example to a re-implementation of (part of) Option as:
 /*
-  object Option extends Monads {
+  object Option extends MonadsWithZero {
     type M[+A] = Option[A]
     def unit[A](a : => A) = Some(a)
     override def zero = None
   }
   
-  sealed abstract class Option[+A] extends Option.Monad[A] with Option.OrElse[A]
+  sealed abstract class Option[+A] extends Option.MonadWithZero[A] with Option.OrElse[A]
 
   case class Some[+A](value : A) extends Option[A] {
     def flatMap[B](f : A => Option[B]) = f(value)

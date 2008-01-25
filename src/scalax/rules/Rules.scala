@@ -18,7 +18,7 @@ case class ~[+A, +B](_1 : A, _2 : B)
  * @author Andrew Foggin
  * @author inspired by the Scala parser combinator
  */
-trait Rules extends StateReader {
+trait Rules extends MonadsWithZero with StateReader {
   type M[+A] = Rule[A]
   
   def unit[A](a : => A) = rule[A] { s => Success(a, s) }
@@ -53,7 +53,7 @@ trait Rules extends StateReader {
     
   def select[A](rules : Collection[Rule[A]]) : Rule[A] = rules.reduceLeft[Rule[A]](_ | _)
 
-  abstract class Rule[+A] extends (S => Result[(A, S)]) with Monad[A] with OrElse[A] {
+  abstract class Rule[+A] extends (S => Result[(A, S)]) with MonadWithZero[A] with OrElse[A] {
     def |[B >: A](other : => Rule[B]) = orElse(other)
 
     def ^^[B](f : A => B) = map(f)
