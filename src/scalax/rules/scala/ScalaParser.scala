@@ -354,14 +354,14 @@ abstract class ScalaParser[T <: Input[Char, T] with Memoisable[T]] extends Scann
   lazy val prefixExpr = (plus | minus | bang | tilde) ~ simpleExpr ^~^ PrefixExpression | simpleExpr
 
   /**
-  SimpleExpr ::= ‘new’ (ClassTemplate | TemplateBody)
+  SimpleExpr ::= new (ClassTemplate | TemplateBody)
                       | BlockExpr
-                      | SimpleExpr1 [‘_’]
+                      | SimpleExpr1 [_]
   SimpleExpr1 ::= Literal
                       | Path
-                      | ‘_’
-                      | ‘(’ [Exprs [‘,’]] ‘)’
-                      | SimpleExpr ‘.’ id
+                      | _
+                      | ( [Exprs [,]] )
+                      | SimpleExpr . id
                       | SimpleExpr TypeArgs
                       | SimpleExpr1 ArgumentExprs
                       | XmlExpr
@@ -460,7 +460,7 @@ abstract class ScalaParser[T <: Input[Char, T] with Memoisable[T]] extends Scann
   lazy val variance = plus -^ Covariant | minus -^ Contravariant | success(Invariant)
   lazy val variantTypeParam = variance ~ typeParam ^~^ VariantTypeParameter
   
-  /** TypeParam ::= id [‘>:’ Type] [‘<:’ Type] [‘<%’ Type] */
+  /** TypeParam ::= id [>: Type] [<: Type] [<% Type] */
   // TODO: Definition from SLS is wrong (no type parameters after id) - raise issue
   lazy val typeParam = (id | `_`) ~ (typeParamClause?) ~ (`>:` -~ typeSpec ?) ~ (`<:` -~ typeSpec ?) ~ (`<%` -~ typeSpec ?) ^~~~~^ TypeParameter
 
