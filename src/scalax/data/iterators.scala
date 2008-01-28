@@ -65,6 +65,13 @@ object IteratorHelp {
 			def next = i.next().asInstanceOf[A]
 		}
 
+	/** Wraps a Java Enumeration into a Scala Iterator. */
+	def fromJava[A](i : java.util.Enumeration) =
+		new Iterator[A] {
+			def hasNext = i.hasMoreElements()
+			def next = i.nextElement().asInstanceOf[A]
+		}
+
 	/** Returns the block value for each row of a ResultSet. */
 	def resultSet[A](rs : ResultSet)(f : => A) =
 		new Iterator[A] {
