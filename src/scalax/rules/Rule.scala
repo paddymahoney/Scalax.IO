@@ -1,2 +1,0 @@
-package scalax.rules
-
