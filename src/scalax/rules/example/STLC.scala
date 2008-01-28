@@ -15,8 +15,8 @@ case class App(function : Term, arg : Term) extends Term
 
 
 class BindingRules[T] extends Rules {
-  type S = _root_.scala.collection.immutable.Map[Name, T]
-  val empty : S = _root_.scala.collection.immutable.Map.empty[Name, T]
+  type S = Map[Name, T]
+  val empty : S = Map.empty[Name, T]
   
   def bind(name : Name, value : T) = rule { ctx => Success(value, ctx(name) = value) }
   def boundValue(name : Name) = rule { ctx => if (ctx.contains(name)) Success(ctx(name), ctx) else Failure }
