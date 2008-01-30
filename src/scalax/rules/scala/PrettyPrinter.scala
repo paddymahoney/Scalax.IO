@@ -18,7 +18,7 @@ class PrettyPrinter[T <: Input[Char, T] with Memoisable[T]] extends ScalaParser[
   def at(pos : Int) = index filter (_ == pos)
   
   val escapeItem : Rule[String] = (newline -^ "<br />\n"
-    | ' ' -^ "&nbsp;"
+    | ' ' -^ "&#160;"
     | '&' -^ "&amp;"
     | '<' -^ "&lt;"
     | item ^^ (_ toString))
