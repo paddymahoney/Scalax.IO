@@ -59,17 +59,17 @@ object IteratorHelp {
 		}
 
 	/** Wraps a Java iterator into a Scala one. */
-	def fromJava[A](i : java.util.Iterator) =
+	def fromJava[A](i : java.util.Iterator[A]) =
 		new Iterator[A] {
 			def hasNext = i.hasNext()
-			def next = i.next().asInstanceOf[A]
+			def next = i.next()
 		}
 
 	/** Wraps a Java Enumeration into a Scala Iterator. */
-	def fromJava[A](i : java.util.Enumeration) =
+	def fromJava[A](i : java.util.Enumeration[A]) =
 		new Iterator[A] {
 			def hasNext = i.hasMoreElements()
-			def next = i.nextElement().asInstanceOf[A]
+			def next = i.nextElement()
 		}
 
 	/** Returns the block value for each row of a ResultSet. */

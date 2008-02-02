@@ -28,19 +28,19 @@ final class AtomicCell[A](init : A) {
 		ref.weakCompareAndSet(expect, update)
 }
 
-class ConcurrentHashMap[K,V](val jmap : JConcurrentHashMap) extends MapWrapper[K,V] {
+class ConcurrentHashMap[K,V](val jmap : JConcurrentHashMap[K,V]) extends MapWrapper[K,V] {
 	def underlying = jmap
 	def this() = this(new JConcurrentHashMap(2))
 	def putIfAbsent(k : K, v : V) : Option[V] = {
 		val r = jmap.putIfAbsent(k, v)
-		if(r == null) None else Some(r.asInstanceOf[V])
+		if(r == null) None else Some(r)
 	}
 	def remove(k : K, v : V) : Boolean = jmap.remove(k, v)
 	def replace(k : K, o : V, n : V) : Boolean = jmap.replace(k, o, n)
-	def replace(k : K, v : V) : V = jmap.replace(k, v).asInstanceOf[V]
+	def replace(k : K, v : V) : V = jmap.replace(k, v)
 }
 
-class ConcurrentHashSet[A](val jmap : JConcurrentHashMap) extends Set[A] {
+class ConcurrentHashSet[A](val jmap : JConcurrentHashMap[A, Unit]) extends Set[A] {
 	def this() = this(new JConcurrentHashMap(2))
 	def +=(elem : A) : Unit = jmap.put(elem, ())
 	def -=(elem : A) : Unit = jmap.remove(elem)
@@ -55,7 +55,7 @@ class ConcurrentHashSet[A](val jmap : JConcurrentHashMap) extends Set[A] {
 		val i = jmap.keySet.iterator
 		new Iterator[A] {
 			def hasNext = i.hasNext
-			def next = i.next().asInstanceOf[A]
+			def next = i.next()
 		}
 	}
 	override def isEmpty : Boolean = jmap.isEmpty
@@ -70,17 +70,17 @@ class ConcurrentHashSet[A](val jmap : JConcurrentHashMap) extends Set[A] {
 	}
 }
 
-class ConcurrentQueue[A](val jq : LinkedBlockingQueue) {
+class ConcurrentQueue[A](val jq : LinkedBlockingQueue[A]) {
 	def this() = this(new java.util.concurrent.LinkedBlockingQueue)
 	def +=(elem : A) : Unit = jq.put(elem)
 	def clear() : Unit = jq.clear()
 	def poll() : Option[A] = {
 		val r = jq.poll()
-		if(r == null) None else Some(r.asInstanceOf[A])
+		if(r == null) None else Some(r)
 	}
 	def poll(millis : Long) = {
 		val r = jq.poll(millis, java.util.concurrent.TimeUnit.MILLISECONDS)
-		if(r == null) None else Some(r.asInstanceOf[A])
+		if(r == null) None else Some(r)
 	}
 	def size : Int = jq.size
 	def take() : A = jq.take().asInstanceOf[A]
