@@ -10,7 +10,7 @@
 //
 // -----------------------------------------------------------------------------
 
-package scalax.rules.scala
+package scalax.rules.syntax
 
 import scalax.testing._
 

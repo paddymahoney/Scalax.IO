@@ -23,7 +23,7 @@ trait Input[+A, Context <: Input[A, Context]] extends Iterable[A] { self : Conte
 
     def hasNext = result != Failure
     def next = {
-      val Success(value, input) = result
+      val Success((value, input)) = result
       this.input = input
       this.result = input.next
       value
@@ -60,7 +60,7 @@ class View[A, B, Context <: Input[A, Context]](
     extends Input[B, View[A, B, Context]] {
 
   def next = transform(input) match {
-    case Success(b, context) => Success(b, new View(transform, context, index + 1))
+    case Success((b, context)) => Success((b, new View(transform, context, index + 1)))
     case _ => Failure
   }
 }

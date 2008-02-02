@@ -84,7 +84,7 @@ trait IncrementalInput[A, Context <: IncrementalInput[A, Context]]
    *  and all Success results up to pos that point beyond pos
    */
   protected def cleanResults(pos : Int) = map.retain { 
-    case (_, Success(_, elem)) if elem.index < pos => true 
+    case (_, Success((_, elem))) if elem.index < pos => true 
     case _ => false 
   }
 
@@ -102,12 +102,12 @@ trait IncrementalInput[A, Context <: IncrementalInput[A, Context]]
   }
   
   protected def hasNextElement = next match {
-    case Success(_, _) => true
+    case Success((_, _)) => true
     case _ => false
   }
   
   protected def nextElement = next match {
-    case Success(_, element) => element
+    case Success((_, element)) => element
     case _ => throw new RuntimeException("No next element")
   }
   

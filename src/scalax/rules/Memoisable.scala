@@ -35,7 +35,7 @@ trait DefaultMemoisable[Context <: Memoisable[Context]] extends Memoisable[Conte
   }
   
   protected def compute[T](key : AnyRef, f : Context => Result[(T, Context)]) = f(this) match {
-    case success @ Success(value, context) => onSuccess(key, success); success
+    case success @ Success((value, context)) => onSuccess(key, success); success
     case failure => failure
   }
   

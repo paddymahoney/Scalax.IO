@@ -11,6 +11,7 @@
 // -----------------------------------------------------------------------------
 
 package scalax.rules;
+
 /** 
  * Throw this exception or a subclass to indicate a failure without alternatives
  */

@@ -50,7 +50,7 @@ object TestTyper extends Typer with Application {
 
   def check(pairs : (Term, Type)*) {
     for ((term, expected) <- pairs) typeOf(term)(empty) match {
-      case Success(actual, _) => if (actual != expected) error("Term: " + term + 
+      case Success((actual, _)) => if (actual != expected) error("Term: " + term + 
           "\nExpected type: " + expected +
           "\nActual type: " + actual)
       case _ => error("Term: " + term + 

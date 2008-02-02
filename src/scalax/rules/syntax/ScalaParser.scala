@@ -10,7 +10,7 @@
 //
 // -----------------------------------------------------------------------------
 
-package scalax.rules.scala
+package scalax.rules.syntax
 
 import Character._
 import  _root_.scala.collection.immutable.Set
@@ -436,7 +436,7 @@ abstract class ScalaParser[T <: Input[Char, T] with Memoisable[T]] extends Scann
   lazy val caseClauses = (caseClause+) ^^ CaseClauses
   lazy val caseClause = 'case -~ singleStatement(pattern ~ (guard?)) ~- `=>` ~ block ^~~^ CaseClause
 
-  lazy val pattern = pattern1 ~*~ (`|` -^ OrPattern _)
+  lazy val pattern = pattern1 ~*~ (`|` -^ OrPattern)
   
   // Note: Changed by me to infixType
   lazy val pattern1 = (varId ~- `:` ~ infixType ^~^ TypedVariablePattern

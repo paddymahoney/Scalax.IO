@@ -10,7 +10,7 @@
 //
 // -----------------------------------------------------------------------------
 
-package scalax.rules.scala;
+package scalax.rules.syntax;
 
 class PrettyPrinter[T <: Input[Char, T] with Memoisable[T]] extends ScalaParser[T] {
 

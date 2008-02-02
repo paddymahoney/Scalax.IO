@@ -10,7 +10,7 @@
 //
 // -----------------------------------------------------------------------------
 
-package scalax.rules.scala.test;
+package scalax.rules.syntax.test;
 
 object TestIncrementalScalaParser extends ScalaParser[DefaultIncrementalInput] with Application {
   

@@ -10,7 +10,7 @@
 //
 // -----------------------------------------------------------------------------
 
-package scalax.rules.scala.test;
+package scalax.rules.syntax.test;
 
 import java.io.{BufferedReader, File, FileReader, Reader}
 
@@ -32,8 +32,8 @@ object ReadFiles extends ScalaParser[ReaderInput] with Application {
     val result = compilationUnit(input)
     result match {
       //case Success(value, rest) => println(value + "\nRemaining = \"" + rest)//.mkString("") + "\"")
-      case Success(value, rest) if rest.mkString("") != "" => error(value + "\nRemaining = \"" + rest.mkString("") + "\"")
-      case Success(value, rest) => println("Success!")
+      case Success((value, rest)) if rest.mkString("") != "" => error(value + "\nRemaining = \"" + rest.mkString("") + "\"")
+      case Success((value, rest)) => println("Success!")
       case _ => error("Failure!")
     }
   }

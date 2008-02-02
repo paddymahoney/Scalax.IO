@@ -59,7 +59,7 @@ trait Rules extends MonadsWithZero with StateReader {
   /** Converts a rule into a function that throws a RuleException on failure.
    */
   implicit def expect[A](rule : Rule[A]) : S => A = (context) => rule(context) match {
-    case Success(a, _) => a
+    case Success((a, _)) => a
     case _ => throw new RuleException(context, "Unexpected failure")
   }
     
@@ -94,7 +94,7 @@ trait Rules extends MonadsWithZero with StateReader {
     def * = rule[List[A]] { c =>
       // tail-recursive function with reverse list accumulator
       def rep(acc : List[A], c : S) : (List[A], S) = apply(c) match {
-         case Success(a, c) => rep(a :: acc, c)
+         case Success((a, c)) => rep(a :: acc, c)
          case _ => (acc, c)
       }
       rep(Nil, c) match { case (list, c) => Success(list.reverse, c) }
@@ -183,7 +183,7 @@ trait Rules extends MonadsWithZero with StateReader {
     
     def flatMap[B](f : A => Rule[B]) = rule { 
       s : S => apply(s) match { 
-        case Success(a, s) => f(a)(s) 
+        case Success((a, s)) => f(a)(s) 
         case _ => Failure
       }
     }

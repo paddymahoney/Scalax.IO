@@ -10,7 +10,7 @@
 //
 // -----------------------------------------------------------------------------
 
-package scalax.rules.scala;
+package scalax.rules.syntax;
 
 object Element {
   type Position = Input[Char, _]
@@ -31,7 +31,7 @@ trait Element[T] {
   override def hashCode = value.hashCode
 }
 
-case class ScalaElement[T](from : Position, value : T, to : Position) extends Element[T] {
+case class ScalaElement[T](from : Element.Position, value : T, to : Element.Position) extends Element[T] {
   val start = from.index
   val length = to.index - start
 }

@@ -10,7 +10,7 @@
 //
 // -----------------------------------------------------------------------------
 
-package scalax.rules.scala.test
+package scalax.rules.syntax.test
 
 trait TestScanner extends Scanner with Application {
 
@@ -18,14 +18,14 @@ trait TestScanner extends Scanner with Application {
   
   def checkSuccess[A](input : String, result : Result[(A, S)], expected : A) {
     result match {
-      case Success(actual, rest) if actual == expected => ()
+      case Success((actual, rest)) if actual == expected => ()
       case actual => fail(input, actual, expected, "")
     }
   }
   
   def check[A](input : String, actual : Result[(A, S)], expected : A, rest : String) {
     actual match {
-      case Success(ea, es) => if (ea != expected && !es.mkString("").equals(rest)) 
+      case Success((ea, es)) => if (ea != expected && !es.mkString("").equals(rest)) 
         fail(input, actual, expected, rest)
       case _ => fail(input, actual, expected, rest)
     }
@@ -33,7 +33,7 @@ trait TestScanner extends Scanner with Application {
   
   def fail[A](input : String, actual : Result[(A, S)], expected : A, rest : String) {
     actual match {
-      case Success(result, s) =>  error ("Input: " + input + 
+      case Success((result, s)) =>  error ("Input: " + input + 
         "\nExpected success: " + expected + 
         "\nWith remaining input: \"" + rest + "\"" +
         "\n\nActual success value: " + result +

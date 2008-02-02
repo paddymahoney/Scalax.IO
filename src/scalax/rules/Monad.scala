@@ -12,15 +12,11 @@
 
 package scalax.rules
 
-
-trait Monads {
-  type M[+A]
+trait Monads extends Functors {
+  type M[+A] <: Monad[A]
+  type F[+A] = M[A]
   
   def unit[A](a : => A) : M[A]
-  
-  trait Functor[+A] { self : M[A] =>
-    def map[B](f : A => B) : M[B]
-  }
   
   trait Monad[+A] extends Functor[A] { self : M[A] =>
     def flatMap[B](f : A => M[B]) : M[B]
