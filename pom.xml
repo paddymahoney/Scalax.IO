@@ -58,6 +58,13 @@ The Scala Community Library (Scalax) is a nascent project to develop a general u
   </dependencies>
   <build>
     <sourceDirectory>src</sourceDirectory>
+    <extensions>
+      <extension>
+        <groupId>org.apache.maven.wagon</groupId>
+        <artifactId>wagon-webdav</artifactId>
+        <version>1.0-beta-2</version>
+      </extension>
+    </extensions>
     <plugins>
       <plugin>
         <groupId>org.scala-tools</groupId>
@@ -93,7 +100,17 @@ The Scala Community Library (Scalax) is a nascent project to develop a general u
       <plugin>
         <groupId>org.scala-tools</groupId>
         <artifactId>maven-scala-plugin</artifactId>
+        <configuration>
+          <scalaVersion>${scala.version}</scalaVersion>
+        </configuration>
       </plugin>
     </plugins>
   </reporting>
+  <distributionManagement>
+    <snapshotRepository>
+      <id>scala-tools.org</id>
+      <url>dav:http://dav.scala-tools.org/repo-snapshots</url>
+      <uniqueVersion>false</uniqueVersion>
+    </snapshotRepository>
+  </distributionManagement> 
 </project>
