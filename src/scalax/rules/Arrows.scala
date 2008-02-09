@@ -1,43 +1,43 @@
 package scalax.rules
 
 trait Arrows {
-  type Arr[-X, +Y] <: Arrow[X, Y]
+  type Arr[-A, +B] <: Arrow[A, B]
 
-  def arrow[X, Y](f : X => Y) : Arr[X, Y]
-  def tuple[X] = arrow[X, (X, X)] { x => (x, x) }
+  def arrow[A, B](f : A => B) : Arr[A, B]
+  def diag[A] = arrow[A, (A, A)] { a => (a, a) }
 
-  trait Arrow[-X, +Y] { self : Arr[X, Y] =>
-    def map[Z](f : Y => Z) = comp(arrow(f))
-    def comp[Z](yz : => Arr[Y, Z]) : Arr[X, Z]
-    def fst[Z] : Arr[(X, Z), (Y, Z)]
+  trait Arrow[-A, +B] { self : Arr[A, B] =>
+    def map[C](f : B => C) = comp(arrow(f))
+    def comp[C](bc : => Arr[B, C]) : Arr[A, C]
+    def fst[C] : Arr[(A, C), (B, C)]
   }
 }
 
-trait MonadicArrows extends Monads with Arrows {
-  type Arr[-X, +Y] = MonadicArrow[X, Y]
+trait MonadArrows extends Monads with Arrows {
+  type Arr[-A, +B] = MonadArrow[A, B]
 
-  def arrow[X, Y](f : X => Y) = new Arr[X, Y](x => unit(f(x)))
+  def arrow[A, B](f : A => B) = new Arr[A, B](a => unit(f(a)))
 
-  class MonadicArrow[-X, +Y](val f : X => M[Y]) extends Arrow[X, Y] { self : Arr[X, Y] =>
-    def comp[Z](yz : => Arr[Y, Z]) = new Arr[X, Z](x => f(x) flatMap yz.f)
-    def fst[Z] = new Arr[(X, Z), (Y, Z)]({ case (x, z) => f(x) map { y => (y, z) } })
+  class MonadArrow[-A, +B](val f : A => Fun[B]) extends Arrow[A, B] {
+    def comp[C](bc : => Arr[B, C]) = new Arr[A, C](a => for (b <- f(a); c <- bc.f(b)) yield c) //(a => f(a) flatMap bc.f)
+    def fst[C] = new Arr[(A, C), (B, C)]({ case (a,c) => for(b <- f(a)) yield (b,c) }) //({ case (a, c) => f(a) map { b => (b, c) } })
   }
 }
 
 trait ApplicativeArrows extends Arrows {
-  type Arr[-X, +Y] <: ApplicativeArrow[X, Y]
+  type Arr[-A, +B] <: ApplicativeArrow[A, B]
 
-  def app[X, Y] : Arr[(Arr[X, Y], X), Y]
+  def app[A, B] : Arr[(Arr[A, B], A), B]
   
-  trait ApplicativeArrow[-X, +Y] extends Arrow[X, Y] { self : Arr[X, Y] =>
-    def flatMap[SubX <: X, Z](f : Y => Arr[SubX, Z]) : Arr[SubX, Z] =
-      tuple[SubX].comp(map(f).fst[SubX]).comp(app[SubX, Z])
+  trait ApplicativeArrow[-A, +B] extends Arrow[A, B] { self : Arr[A, B] =>
+    def flatMap[SubA <: A, C](f : B => Arr[SubA, C]) : Arr[SubA, C] =
+      diag[SubA].comp(map(f).fst[SubA]).comp(app[SubA, C])
   }
 }
 
 trait ArrowMonads extends ApplicativeArrows with Monads {
-  type Arr[-X, +Y] <: ApplicativeArrow[X, Y] with Monad[Y]
-  type M[+X] = Arr[Nothing, X]
+  type Arr[-A, +B] <: ApplicativeArrow[A, B] with Monad[B]
+  type Fun[+A] = Arr[Nothing, A]
 
-  def unit[X](x : => X) : M[X] = arrow[Unit, X](Unit => x)
+  override def unit[A](a : => A) : Fun[A] = arrow[Unit, A](Unit => a)
 }

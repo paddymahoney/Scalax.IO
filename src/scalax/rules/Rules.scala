@@ -31,9 +31,9 @@ case class ~[+A, +B](_1 : A, _2 : B)
  * @author inspired by the Scala parser combinator
  */
 trait Rules extends MonadsWithZero with StateReader {
-  type M[+A] = Rule[A]
+  type Fun[+A] = Rule[A]
   
-  def unit[A](a : => A) = rule[A] { s => Success(a, s) }
+  override def unit[A](a : => A) = rule[A] { s => Success(a, s) }
   override def zero = ZeroRule
   
   def get = rule[S] { s => Success(s, s) }

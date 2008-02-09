@@ -12,54 +12,53 @@
 
 package scalax.rules
 
-trait Monads extends Functors {
-  type M[+A] <: Monad[A]
-  type F[+A] = M[A]
+trait Monads extends UnitFunctors {
+  type Fun[+A] <: Monad[A]
   
-  def unit[A](a : => A) : M[A]
+  override def unit[A](a : => A) : Fun[A]
   
-  trait Monad[+A] extends Functor[A] { self : M[A] =>
-    def flatMap[B](f : A => M[B]) : M[B]
+  trait Monad[+A] extends Functor[A] { self : Fun[A] =>
+    def flatMap[B](f : A => Fun[B]) : Fun[B]
     def map[B](f : A => B) = flatMap { a => unit(f(a)) }
   }
 
-  trait Plus[+A] { self : M[A] =>
-    def plus[B >: A](other : => M[B]) : M[B]
+  trait Plus[+A] { self : Fun[A] =>
+    def plus[B >: A](other : => Fun[B]) : Fun[B]
   }
 }
 
 
 trait MonadsWithZero extends Monads {
-  def zero : M[Nothing]
+  def zero : Fun[Nothing]
   
-  trait MonadWithZero[+A] extends Monad[A] { self : M[A] =>
+  trait MonadWithZero[+A] extends Monad[A] { self : Fun[A] =>
     def filter[B >: A](f : A => Boolean) = flatMap { a => if (f(a)) unit(a) else zero }
   }
 
-  trait OrElse[+A] { self : M[A] =>
-    def orElse[B >: A](other : => M[B]) : M[B]
+  trait OrElse[+A] { self : Fun[A] =>
+    def orElse[B >: A](other : => Fun[B]) : Fun[B]
   }
 
-  trait Zero extends Monad[Nothing] { self : M[Nothing] =>
-    def flatMap[B](f : Nothing => M[B]) : M[B] = this
+  trait Zero extends Monad[Nothing] { self : Fun[Nothing] =>
+    def flatMap[B](f : Nothing => Fun[B]) : Fun[B] = this
   }
 
-  trait ZeroPlus extends Zero with Plus[Nothing] { self : M[Nothing] =>
-    def plus[B](other : => M[B]) = other
+  trait ZeroPlus extends Zero with Plus[Nothing] { self : Fun[Nothing] =>
+    def plus[B](other : => Fun[B]) = other
   }
 
-  trait ZeroOrElse extends Zero with OrElse[Nothing] { self : M[Nothing] =>
-    def orElse[B](other : => M[B]) = other
+  trait ZeroOrElse extends Zero with OrElse[Nothing] { self : Fun[Nothing] =>
+    def orElse[B](other : => Fun[B]) = other
   }
 }
 
 trait StateReader extends Monads {
   type S
   
-  def get : M[S]
-  def read[A](f : S => A) : M[A]
-  def set(s : => S) : M[S]
-  def update(f : S => S) : M[S]
+  def get : Fun[S]
+  def read[A](f : S => A) : Fun[A]
+  def set(s : => S) : Fun[S]
+  def update(f : S => S) : Fun[S]
 }
 
 
@@ -68,7 +67,7 @@ trait StateReader extends Monads {
   //This leads for example to a re-implementation of (part of) Option as:
 /*
   object Option extends MonadsWithZero {
-    type M[+A] = Option[A]
+    type Fun[+A] = Option[A]
     def unit[A](a : => A) = Some(a)
     override def zero = None
   }

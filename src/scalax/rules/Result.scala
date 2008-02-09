@@ -18,9 +18,9 @@ package scalax.rules;
 class RuleException[Context](val context : Context, message : String) extends Exception(message)
 
 object Result extends MonadsWithZero {
-  type M[+A] = Result[A]
+  type Fun[+A] = Result[A]
   
-  def unit[A](a : => A) = Success(a)
+  override def unit[A](a : => A) = Success(a)
   override def zero = Failure
 }
   
