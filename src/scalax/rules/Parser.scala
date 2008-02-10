@@ -12,15 +12,12 @@
 
 package scalax.rules
 
-
 /**
- * A Parser is used to define rules that operate on sequential input
+ * Rules that operate on sequential input
  */
-trait Parser[A] extends Rules {
-  type S <: Input[A, S]
-
+trait SeqRules[A] extends Rules {
   /** Succeeds with the first element of the input unless input is empty. */
-  val item = rule[A] { input => input.next }
+  def item : Rule[A]
 
   implicit def elem(a : A) = item filter (_ == a)
 
@@ -31,6 +28,34 @@ trait Parser[A] extends Rules {
 
   /** Allows rules like 'a' to 'z' */
   implicit def iteratorToChoice[B <: Iterator[A]](iterator : B) : Rule[A] = choice(iterator.toList)
+}
+
+       
+/**
+ * Rules that operate on a sequence of characters.
+ */
+trait CharSeqRules extends SeqRules[Char] {
+  implicit def readString(string : String) : Rule[String] = readSeq(string)
+  implicit def stringToInput(string : String) : ArrayInput[Char] = new ArrayInput[Char](string.toArray)
+
+  def toString(seq : Seq[Any]) = seq.mkString("")
+      
+  import Character._
+  def whitespace = item filter isWhitespace *
+  def newline = "\r\n" | "\n" | "\r"
+
+  def trim[A](rule : Rule[A]) = whitespace -~ rule ~- whitespace
+}
+
+
+/**
+ * A Parser is used to define rules that operate on sequential input
+ */
+trait Parser[A] extends SeqRules[A] {
+  type S <: Input[A, S]
+
+  /** Succeeds with the first element of the input unless input is empty. */
+  val item = rule[A] { input => input.next }
 
   def view[B](transform : Rule[B])(input : S) = new View[A, B, S](transform, input, 0)
 }
@@ -39,15 +64,4 @@ trait Parser[A] extends Rules {
 /**
  * A Scanner is a parser for character input.
  */
-trait Scanner extends Parser[Char] {
-  implicit def readString(string : String) : Rule[String] = readSeq(string)
-  implicit def stringToInput(string : String) : ArrayInput[Char] = new ArrayInput[Char](string.toArray)
-
-  def toString(seq : Seq[Any]) = seq.mkString("")
-    
-  import Character._
-  def whitespace = item filter isWhitespace *
-  def newline = "\r\n" | "\n" | "\r"
-
-  def trim[A](rule : Rule[A]) = whitespace -~ rule ~- whitespace
-}
+trait Scanner extends Parser[Char] with CharSeqRules
