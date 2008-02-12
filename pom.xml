@@ -21,7 +21,7 @@ The Scala Community Library (Scalax) is a nascent project to develop a general u
     </license>
   </licenses>
   <properties>
-    <scala.version>SNAPSHOT</scala.version>
+    <scala.version>2.7.0-rc1</scala.version>
     <java.src.version>1.5</java.src.version>
   </properties>
   <repositories>
@@ -30,22 +30,12 @@ The Scala Community Library (Scalax) is a nascent project to develop a general u
       <name>Scala-Tools Maven2 Repository</name>
       <url>http://scala-tools.org/repo-releases</url>
     </repository>
-    <repository>
-      <id>scala-tools.org-snapshots</id>
-      <name>Scala-Tools Maven2 Snapshots Repository</name>
-      <url>http://scala-tools.org/repo-snapshots</url>
-    </repository>
   </repositories>
   <pluginRepositories>
     <pluginRepository>
       <id>scala-tools.org</id>
       <name>Scala-Tools Maven2 Repository</name>
       <url>http://scala-tools.org/repo-releases</url>
-    </pluginRepository>
-    <pluginRepository>
-      <id>scala-tools.org-snapshots</id>
-      <name>Scala-Tools Maven2 Snapshots Repository</name>
-      <url>http://scala-tools.org/repo-snapshots</url>
     </pluginRepository>
   </pluginRepositories>
   <dependencies>
