@@ -30,8 +30,8 @@ class BindingRules[T] extends Rules {
   type S = Map[Name, T]
   val empty : S = Map.empty[Name, T]
   
-  def bind(name : Name, value : T) = rule { ctx => Success(value, ctx(name) = value) }
-  def boundValue(name : Name) = rule { ctx => if (ctx.contains(name)) Success(ctx(name), ctx) else Failure }
+  def bind(name : Name, value : T) : Rule[T] = rule { ctx => Success(ctx(name) = value, value) }
+  def boundValue(name : Name) : Rule[T] = rule { ctx => if (ctx.contains(name)) Success(ctx, ctx(name)) else Failure() }
 }
 
 class Typer extends BindingRules[Type] {
@@ -50,7 +50,7 @@ object TestTyper extends Typer with Application {
 
   def check(pairs : (Term, Type)*) {
     for ((term, expected) <- pairs) typeOf(term)(empty) match {
-      case Success((actual, _)) => if (actual != expected) error("Term: " + term + 
+      case Success(_ , actual) => if (actual != expected) error("Term: " + term + 
           "\nExpected type: " + expected +
           "\nActual type: " + actual)
       case _ => error("Term: " + term + 

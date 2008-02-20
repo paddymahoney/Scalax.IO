@@ -59,8 +59,8 @@ class PrettyPrinter[T <: Input[Char, T] with Memoisable[T]] extends ScalaParser[
 class MemoisableStringInput(val string : String, val index : Int) extends Input[Char, MemoisableStringInput] with DefaultMemoisable[MemoisableStringInput] {
   def this(string : String) = this(string, 0)
 
-  lazy val next = if (index >= string.length) Failure
-      else Success(string.charAt(index), new MemoisableStringInput(string, index + 1))
+  lazy val next = if (index >= string.length) Failure(())
+      else Success(new MemoisableStringInput(string, index + 1), string.charAt(index))
       
   //override protected def onSuccess[T](key : AnyRef,  result : Success[T, MemoisableStringInput]) { 
   //  println(key + " -> " + result) 

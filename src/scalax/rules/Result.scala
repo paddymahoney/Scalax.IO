@@ -12,11 +12,29 @@
 
 package scalax.rules;
 
-/** 
- * Throw this exception or a subclass to indicate a failure without alternatives
+/** Represents the combined value of two rules applied in sequence.
+ *
+ * @see the Scala parser combinator
  */
-class RuleException[Context](val context : Context, message : String) extends Exception(message)
+case class ~[+A, +B](_1 : A, _2 : B)
+   
 
+sealed abstract class Result[+Out, +A, +X] {
+  
+}
+
+case class Success[+Out, +A](out : Out, value : A) extends Result[Out, A, Nothing] {
+  
+}
+
+case class Failure[+X](x : X) extends Result[Nothing, Nothing, X]
+
+case class Error[+X](override val x : X) extends Failure(x)
+
+//object Failure {
+//  def apply : Failure[Unit] = Failure((), true)
+//}
+/*
 object Result extends MonadsWithZero {
   type Fun[+A] = Result[A]
   
@@ -43,3 +61,4 @@ case class Success[+A](value : A) extends Result[A] {
  * Result of a rule that could not be applied.
  */
 case object Failure extends Result[Nothing] with Result.ZeroOrElse
+*/

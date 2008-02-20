@@ -1,26 +1,19 @@
 package scalax.rules
 
-trait Arrows {
+trait Arrows extends UnitFunctors  {
   type Arr[-A, +B] <: Arrow[A, B]
-
+  type Fun[+B] = Arr[Nothing, B]
+  
   def arrow[A, B](f : A => B) : Arr[A, B]
   def diag[A] = arrow[A, (A, A)] { a => (a, a) }
-
-  trait Arrow[-A, +B] { self : Arr[A, B] =>
+  
+  override def unit[B](b : => B) : Fun[B] = arrow { any : Any => b }
+  
+  trait Arrow[-A, +B] extends Functor[B] { this : Arr[A, B] =>
+    
     def map[C](f : B => C) = comp(arrow(f))
     def comp[C](bc : => Arr[B, C]) : Arr[A, C]
     def fst[C] : Arr[(A, C), (B, C)]
-  }
-}
-
-trait MonadArrows extends Monads with Arrows {
-  type Arr[-A, +B] = MonadArrow[A, B]
-
-  def arrow[A, B](f : A => B) = new Arr[A, B](a => unit(f(a)))
-
-  class MonadArrow[-A, +B](val f : A => Fun[B]) extends Arrow[A, B] {
-    def comp[C](bc : => Arr[B, C]) = new Arr[A, C](a => for (b <- f(a); c <- bc.f(b)) yield c) //(a => f(a) flatMap bc.f)
-    def fst[C] = new Arr[(A, C), (B, C)]({ case (a,c) => for(b <- f(a)) yield (b,c) }) //({ case (a, c) => f(a) map { b => (b, c) } })
   }
 }
 
@@ -37,7 +30,6 @@ trait ApplicativeArrows extends Arrows {
 
 trait ArrowMonads extends ApplicativeArrows with Monads {
   type Arr[-A, +B] <: ApplicativeArrow[A, B] with Monad[B]
-  type Fun[+A] = Arr[Nothing, A]
 
   override def unit[A](a : => A) : Fun[A] = arrow[Unit, A](Unit => a)
 }

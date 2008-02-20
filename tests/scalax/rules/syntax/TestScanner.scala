@@ -16,24 +16,24 @@ trait TestScanner extends Scanner with Application {
 
   def input(string : String) : S
   
-  def checkSuccess[A](input : String, result : Result[(A, S)], expected : A) {
+  def checkSuccess[A](input : String, result : Result[A], expected : A) {
     result match {
-      case Success((actual, rest)) if actual == expected => ()
+      case Success(restm, actual) if actual == expected => ()
       case actual => fail(input, actual, expected, "")
     }
   }
   
-  def check[A](input : String, actual : Result[(A, S)], expected : A, rest : String) {
+  def check[A](input : String, actual : Result[A], expected : A, rest : String) {
     actual match {
-      case Success((ea, es)) => if (ea != expected && !es.mkString("").equals(rest)) 
+      case Success(es, ea) => if (ea != expected && !es.mkString("").equals(rest)) 
         fail(input, actual, expected, rest)
       case _ => fail(input, actual, expected, rest)
     }
   }
   
-  def fail[A](input : String, actual : Result[(A, S)], expected : A, rest : String) {
+  def fail[A](input : String, actual : Result[A], expected : A, rest : String) {
     actual match {
-      case Success((result, s)) =>  error ("Input: " + input + 
+      case Success(s, result) =>  error ("Input: " + input + 
         "\nExpected success: " + expected + 
         "\nWith remaining input: \"" + rest + "\"" +
         "\n\nActual success value: " + result +
@@ -47,10 +47,12 @@ trait TestScanner extends Scanner with Application {
   
   def checkFailure[A](rule : Rule[A])(inputs : String *) {
     for (string <- inputs) {
-      val actual = rule(input(string))
-      if (actual != Failure) error ("Input: " + string + 
-        "\nExpected Failure" + 
-        "\nActual result: " + actual)
+      rule(input(string)) match {
+        case rules.Failure(_) => ()
+        case actual => error ("Input: " + string + 
+          "\nExpected Failure" + 
+          "\nActual result: " + actual)
+      }
     }
   }
   

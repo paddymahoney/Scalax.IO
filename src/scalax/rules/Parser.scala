@@ -19,7 +19,7 @@ trait SeqRules[A] extends Rules {
   /** Succeeds with the first element of the input unless input is empty. */
   def item : Rule[A]
 
-  implicit def elem(a : A) = item filter (_ == a)
+  implicit def elem(a : A) : Rule[A] = item filter (_ == a)
 
   def readSeq[C <% Seq[A]](seq : C) : Rule[C] = if (seq isEmpty) success(seq)
       else seq.map(elem(_)).reduceLeft[Rule[A]](_ -~ _) -^ seq

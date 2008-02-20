@@ -20,9 +20,9 @@ trait ArithmeticEvaluator extends IncrementalScanner {
   lazy val factor : Rule[Int] = memo("factor", trim(number | '(' -~ expr ~- ')'))
   lazy val number = (('0' to '9')+) ^^ toString ^^ (_ toInt)
   
-  private def op(r : Rule[Any], f : (Int, Int) => Int) = r -^ f
+  private def op(r : Rule[Any], f : (Int, Int) => Int) : Rule[(Int, Int) => Int] = r -^ f
 
-  def evaluate = expect(expr ~- !item | exception("Invalid expression"))
+  def evaluate = expect(expr ~- (!item | Rule.error("Invalid expression")))
 }
   
 object ExampleUsage extends ArithmeticEvaluator with Application {

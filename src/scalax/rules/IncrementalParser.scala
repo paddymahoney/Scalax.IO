@@ -19,7 +19,7 @@ trait IncrementalScanner extends Scanner with MemoisableRules {
 class DefaultIncrementalInput extends IncrementalInput[Char, DefaultIncrementalInput] {
   def element = new DefaultIncrementalInput
 
-  override protected def onSuccess[T](key : AnyRef,  result : Success[(T, DefaultIncrementalInput)]) { 
+  override protected def onSuccess[T](key : AnyRef,  result : Success[DefaultIncrementalInput, T]) { 
     if(DefaultIncrementalInput.debug) println(key + " -> " + result) 
   }
 }
@@ -33,7 +33,7 @@ trait IncrementalInput[A, Context <: IncrementalInput[A, Context]]
     with DefaultMemoisable[Context] 
     with Ordered[Context] { self : Context =>
 
-  var next : Result[(A, Context)] = Failure
+  var next : Result[Context, A, Unit] = Failure((), true)
   var index : Int = 0
 
   /** Create a new element. */
@@ -84,7 +84,7 @@ trait IncrementalInput[A, Context <: IncrementalInput[A, Context]]
    *  and all Success results up to pos that point beyond pos
    */
   protected def cleanResults(pos : Int) = map.retain { 
-    case (_, Success((_, elem))) if elem.index < pos => true 
+    case (_, Success(elem, _)) if elem.index < pos => true 
     case _ => false 
   }
 
@@ -98,16 +98,16 @@ trait IncrementalInput[A, Context <: IncrementalInput[A, Context]]
   protected def insert(value : A) {
     val elem = element
     elem.next = next
-    next = Success(value, elem)
+    next = Success(elem, value)
   }
   
   protected def hasNextElement = next match {
-    case Success((_, _)) => true
+    case Success(_, _) => true
     case _ => false
   }
   
   protected def nextElement = next match {
-    case Success((_, element)) => element
+    case Success(element, _) => element
     case _ => throw new RuntimeException("No next element")
   }
   

@@ -17,29 +17,29 @@ import _root_.scala.collection.mutable.HashMap
 trait MemoisableRules extends Rules {
   type S <: Memoisable[S]
   
-  def memo[A](key : AnyRef, f : S => Result[(A, S)]) : Rule[A] = rule[A] { ctx => ctx.memo(key, f) }
+  def memo[A](key : AnyRef, f : S => Result[A]) : Rule[A] = rule[A] { ctx => ctx.memo(key, f) }
 }
 
 trait Memoisable[Context] {
-  def memo[A](key : AnyRef, f : Context => Result[(A, Context)]) : Result[(A, Context)]
+  def memo[A](key : AnyRef, f : Context => Result[Context, A, Any]) : Result[Context, A, Any]
 }
 
 trait DefaultMemoisable[Context <: Memoisable[Context]] extends Memoisable[Context] {
   
   self : Context =>
 
-  protected val map = new HashMap[AnyRef, Result[(Any, Context)]]
+  protected val map = new HashMap[AnyRef, Result[Context, Any, Any]]
 
-  def memo[T](key : AnyRef, f : Context => Result[(T, Context)]) = {
-    map.getOrElseUpdate(key, compute(key, f)).asInstanceOf[Result[(T, Context)]]
+  def memo[T](key : AnyRef, f : Context => Result[Context, T, Any]) = {
+    map.getOrElseUpdate(key, compute(key, f)).asInstanceOf[Result[Context, T, Any]]
   }
   
-  protected def compute[T](key : AnyRef, f : Context => Result[(T, Context)]) = f(this) match {
-    case success @ Success((value, context)) => onSuccess(key, success); success
+  protected def compute[T](key : AnyRef, f : Context => Result[Context, T, Any]) = f(this) match {
+    case success @ Success(context, value) => onSuccess(key, success); success
     case failure => failure
   }
   
-  protected def onSuccess[T](key : AnyRef,  result : Success[(T, Context)]) { }
+  protected def onSuccess[T](key : AnyRef,  result : Success[Context, T]) { }
 }
 
 

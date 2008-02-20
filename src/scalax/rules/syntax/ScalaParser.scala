@@ -117,19 +117,15 @@ abstract class ScalaParser[T <: Input[Char, T] with Memoisable[T]] extends Scann
   lazy val tilde = idToken("~")
   
   val decimalDigit = ('0' to '9') ^^ (_ - 48L)
-  def decimal(n : Long) = decimalDigit ^^ (n * 10 + _)
-  def decimalN(n : Long) : Rule[Long] = decimal(n) >> decimalN | success(n)
-  
   val octalDigit = decimalDigit.filter(_ < 8)
-  def octal(n : Long) = octalDigit ^^ (n * 8 + _)
-  def octalN(n : Long) : Rule[Long] = octal(n) >> octalN | success(n)
-  
   val hexDigit = decimalDigit | ('A' to 'F') ^^ (_ - 55L) | ('a' to 'f') ^^ (_ - 87L)
-  def hex(n : Long) = hexDigit ^^ (n * 16 + _)
-  def hexN(n : Long) : Rule[Long] = hex(n) >> hexN | success(n)
-
-  val unicodeEscape = "\\u" -~ hexDigit >> hex >> hex >> hex ^^ { _.asInstanceOf[Char] }
-  val octalEscape = '\\' -~ octalDigit >> octal >> octal ^^ { _.asInstanceOf[Char] }
+  
+  val dec = decimalDigit ^^ { d => n : Long => 10 * n + d }
+  val oct = octalDigit ^^ { d => n : Long => 8 * n + d }
+  val hex = hexDigit ^^ { d => n : Long => 16 * n + d }
+  
+  val unicodeEscape = "\\u" -~ hexDigit ~> hex ~> hex ~> hex ^^ { _.asInstanceOf[Char] }
+  val octalEscape = '\\' -~ octalDigit ~> oct ~> oct ^^ { _.asInstanceOf[Char] }
  
   val charEscapeSeq = '\\' -~ ( choice("\"\'\\")
       | 'b' -^ '\b' | 't' -^ '\t' | 'n' -^ '\n' | 'f' -^ '\f' | 'r' -^ '\r') 
@@ -161,9 +157,9 @@ abstract class ScalaParser[T <: Input[Char, T] with Memoisable[T]] extends Scann
   def notReserved(rule : Rule[String]) = rule filter isNotReserved
   
   val nonZero = decimalDigit filter (_ > 0)
-  val hexNumeral = "0x" -~ hexDigit >> hexN
-  val octalNumeral = '0' -~ octalDigit >> octalN
-  val decimalNumeral = nonZero >> decimalN | '0' -^ 0L
+  val hexNumeral = "0x" -~ hexDigit ~>* hex
+  val octalNumeral = '0' -~ octalDigit ~>* oct
+  val decimalNumeral = !'0' -~ decimalDigit ~>* dec | '0' -^ 0L
   
   val integerLiteral = (hexNumeral | octalNumeral | decimalNumeral) ~ (choice("Ll")-?) ~- !idChar >> {
     case value ~ false => success(IntegerLiteral(value.asInstanceOf[Int]))
@@ -343,7 +339,7 @@ abstract class ScalaParser[T <: Input[Char, T] with Memoisable[T]] extends Scann
   }
   
   def infixId(choices : String) : Rule[String] = id filter { string => choices contains (string.charAt(0)) }
-  def infixOp(rule : Rule[String]) : Rule[(Expression, Expression) => Expression] = rule ~- (nl?) ^^ { id => InfixExpression(id, _, _) }
+  def infixOp(rule : Rule[String]) : Rule[(Expression, Expression) => Expression] = rule ~- (nl?) ^^ { id => InfixExpression(id, _ : Expression, _ : Expression) }
       
   /** Infix operators in list from lowest to highest precedence */
   lazy val operators : List[Rule[(Expression, Expression) => Expression]] = List[Rule[String]](

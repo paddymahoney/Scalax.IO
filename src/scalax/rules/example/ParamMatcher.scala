@@ -15,7 +15,11 @@ package scalax.rules.example
 class ParamMatcher extends Rules {
   type S = Map[String, String]
   
-  implicit def param(name : String) = rule { params => if (params.contains(name)) Success(params(name), params) else Failure }
+  implicit def param(name : String) : Rule[String] = rule { params => 
+    if (params.contains(name)) Success(params, params(name)) 
+    else Failure("Not found: " + name) 
+  }
+  
   def intParam(name : String) = param(name) ^^? { case string if string matches "\\d+" => string.toInt }
 }
 

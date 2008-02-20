@@ -32,8 +32,8 @@ object ReadFiles extends ScalaParser[ReaderInput] with Application {
     val result = compilationUnit(input)
     result match {
       //case Success(value, rest) => println(value + "\nRemaining = \"" + rest)//.mkString("") + "\"")
-      case Success((value, rest)) if rest.mkString("") != "" => error(value + "\nRemaining = \"" + rest.mkString("") + "\"")
-      case Success((value, rest)) => println("Success!")
+      case Success(rest, value) if rest.mkString("") != "" => error(value + "\nRemaining = \"" + rest.mkString("") + "\"")
+      case Success(rest, value) => println("Success!")
       case _ => error("Failure!")
     }
   }
@@ -45,17 +45,17 @@ class ReaderInput(reader : Reader, val index : Int) extends Input[Char, ReaderIn
   
   def this(reader : Reader) = this(reader, 0)
 
-  override protected def onSuccess[T](key : AnyRef,  result : Success[(T, ReaderInput)]) { 
+  override protected def onSuccess[T](key : AnyRef,  result : Success[ReaderInput, T]) { 
     //println(key + " -> " + result) 
   }
 
   lazy val next = reader.read() match {
     case -1 => 
       //println("<EOF>@" + index)
-      Failure
+      Failure(())
     case ch => 
       //println(ch.asInstanceOf[Char] + "@" + index)
-      Success(ch.asInstanceOf[Char], new ReaderInput(reader, index + 1))
+      Success(new ReaderInput(reader, index + 1), ch.asInstanceOf[Char])
   }
   
   def close() = reader.close()
