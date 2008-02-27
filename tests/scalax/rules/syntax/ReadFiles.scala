@@ -19,7 +19,7 @@ object ReadFiles extends ScalaParser[ReaderInput] with Application {
   //process(new File("src/scalax/rules"))
   process(new File("../scala-trunk/src/compiler"))
   //process(new File("tests/scalax/rules/scala/TestIncrementalScalaParser.scala"))
-  //process(new File("../scala-trunk/src/compiler/scala/tools/nsc/doc/DocUtil.scala"))
+  //process(new File("../scala-trunk/src/compiler/scala/tools/nsc/symtab/Types.scala"))
   
   def process(file : File) {
     if (file.isDirectory) file.listFiles().foreach(process)
@@ -32,7 +32,7 @@ object ReadFiles extends ScalaParser[ReaderInput] with Application {
     val result = compilationUnit(input)
     result match {
       //case Success(value, rest) => println(value + "\nRemaining = \"" + rest)//.mkString("") + "\"")
-      case Success(rest, value) if rest.mkString("") != "" => error(value + "\nRemaining = \"" + rest.mkString("") + "\"")
+      case Success(rest : Iterable[Char], value) if rest.mkString("") != "" => error(value + "\nRemaining = \"" + rest.mkString("") + "\"")
       case Success(rest, value) => println("Success!")
       case _ => error("Failure!")
     }

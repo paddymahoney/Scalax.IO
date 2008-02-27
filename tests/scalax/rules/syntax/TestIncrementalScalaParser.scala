@@ -17,9 +17,9 @@ object TestIncrementalScalaParser extends ScalaParser[DefaultIncrementalInput] w
   val incrementalInput = new DefaultIncrementalInput
   val input = new ScalaInput(incrementalInput)
   
-  DefaultIncrementalInput.debug = true
+  DefaultMemoisable.debug = true
 
-  val line = memo("line", newline -^ "" | (!newline -~ item +) ~- (newline?) ^^ toString)
+  val line = newline -^ "" | (!newline -~ item +) ~- (newline?) ^^ toString as "line"
   val lines = view(line) _
 
   def printCompilationUnit() {

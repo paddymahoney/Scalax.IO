@@ -18,14 +18,6 @@ trait IncrementalScanner extends Scanner with MemoisableRules {
 
 class DefaultIncrementalInput extends IncrementalInput[Char, DefaultIncrementalInput] {
   def element = new DefaultIncrementalInput
-
-  override protected def onSuccess[T](key : AnyRef,  result : Success[DefaultIncrementalInput, T]) { 
-    if(DefaultIncrementalInput.debug) println(key + " -> " + result) 
-  }
-}
-
-object DefaultIncrementalInput {
-  var debug = false
 }
 
 trait IncrementalInput[A, Context <: IncrementalInput[A, Context]]
@@ -49,24 +41,7 @@ trait IncrementalInput[A, Context <: IncrementalInput[A, Context]]
    * @param inserted sequence of values to insert
    */
   def edit(pos : Int, deleted: Int, inserted : Seq[A]) {
-    // can do this instead from Scala 2.6.1. on
-    //edit(0, pos, deleted, inserted.elements)
-
-    var values = inserted.elements
-    var current = this
-    var finished = false
-    while (!finished) {
-      if (current.index <= pos) current.cleanResults(pos)
-      if (current.index == pos) current.deleteElements(deleted)
-      if (current.index >= pos && values.hasNext) current.insert(values.next)
-      
-      if (current hasNextElement) {
-        current.nextElement.index = current.index + 1
-        current = current.nextElement
-      } else {
-        finished = true
-      }
-    }
+    edit(0, pos, deleted, inserted.elements)
   }
 
   /** Tail-recursive function.  Will only work from Scala 2.6.1. */
@@ -84,7 +59,7 @@ trait IncrementalInput[A, Context <: IncrementalInput[A, Context]]
    *  and all Success results up to pos that point beyond pos
    */
   protected def cleanResults(pos : Int) = map.retain { 
-    case (_, Success(elem, _)) if elem.index < pos => true 
+    case (_, Success(elem : Input[A, Context], _)) if elem.index < pos => true 
     case _ => false 
   }
 

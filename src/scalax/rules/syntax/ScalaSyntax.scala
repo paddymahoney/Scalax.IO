@@ -31,9 +31,9 @@ trait Element[T] {
   override def hashCode = value.hashCode
 }
 
-case class ScalaElement[T](from : Element.Position, value : T, to : Element.Position) extends Element[T] {
-  val start = from.index
-  val length = to.index - start
+case class ScalaElement[T](startPos : () => Int, value : T, endPos : () => Int) extends Element[T] {
+  def start = startPos()
+  def length = endPos() - start
 }
 
 trait Statement

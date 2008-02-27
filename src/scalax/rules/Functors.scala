@@ -12,63 +12,68 @@
 
 package scalax.rules
 
+trait Functor[+A] { 
+  type M[+A] <: Functor[A]
+  def map[B](f : A => B) : M[B]
+}
+
+trait Filter[+A] { 
+  type M[+A] <: Filter[A]
+  def filter(f : A => Boolean) : M[A]
+}
+
+trait Plus[+A] { 
+  type M[+A] <: Plus[A]
+  def plus[B >: A](other : => M[B]) : M[B]
+}
+
+trait OrElse[+A] { 
+  type M[+A] <: OrElse[A]
+  def orElse[B >: A](other : => M[B]) : M[B]
+}
+
+trait Units {
+  type M[+A]
+  def unit : M[Unit]
+  def unit[A](a : => A) : M[A]
+}
+
+trait Zero {
+  type M[+A]
+  def zero : M[Nothing]
+}
+
 trait Functors {
-  type Fun[+A] <: Functor[A]
+  type M[+A] <: Functor[A]
   
-  trait Functor[+A] { this : Fun[A] =>
-    def map[B](f : A => B) : Fun[B]
+  trait Functor[+A] extends rules.Functor[A] { this : M[A] =>
+    type M[+A] = Functors.this.M[A]
   }
-
-  trait Filter[+A] extends Functor[A] { this : Fun[A] =>
-    def filter(f : A => Boolean) : Fun[A]
-  }
-
-  trait Plus[+A] { this : Fun[A] =>
-    def plus[B >: A](other : => Fun[B]) : Fun[B]
-  }
-  
-  trait OrElse[+A] { this : Fun[A] =>
-    def orElse[B >: A](other : => Fun[B]) : Fun[B]
-  }
-
-  trait Zero extends Functor[Nothing] { this : Fun[Nothing] =>
-    override def map[B](f : Nothing => B) : Fun[B] = this
-  }
-
-  trait ZeroFilter extends Filter[Nothing] { this : Fun[Nothing] =>
-    def filter(f : Nothing => Boolean) : Fun[Nothing] = this
-  }
-  
-  trait ZeroPlus extends Functor[Nothing] { this : Fun[Nothing] =>
-    def plus[B](other : => Fun[B]) : Fun[B] = other
-  }
-  
-  trait ZeroOrElse extends Functor[Nothing] { this : Fun[Nothing] =>
-    def orElse[B](other : => Fun[B]) : Fun[B] = other
+ 
+  trait ZeroFunctor extends Functor[Nothing] { this : M[Nothing] =>
+    override def map[B](f : Nothing => B) : M[B] = this
+    def filter(f : Nothing => Boolean) : M[Nothing] = this
+    def plus[B](other : => M[B]) : M[B] = other
+    def orElse[B](other : => M[B]) : M[B] = other
   }
 }
 
 /** One of the 'unit' definitions must be overriden in concrete subclasses */
-trait UnitFunctors extends Functors {
-  def unit : Fun[Unit] = unit(())
-  def unit[A](a : => A) : Fun[A] = unit map { Unit => a }
+trait UnitFunctors extends Units with Functors {
+  def unit : M[Unit] = unit(())
+  def unit[A](a : => A) : M[A] = unit map { Unit => a }
 }
-
-trait FunctorsWithZero extends Functors {
-  def zero : Fun[Nothing]
-}
-
 
 
 trait Monoidals extends UnitFunctors {
-  type Fun[+A] <: Monoidal[A]
+  type M[+A] <: Monoidal[A]
     
-  implicit def app[A, B](fab : Fun[A => B]) = (fa : Fun[A]) => fa applyTo fab
+  implicit def app[A, B](fab : M[A => B]) = (fa : M[A]) => fa applyTo fab
   implicit def appUnit[A, B](a2b : A => B) = app(unit(a2b))
   
   /** One of 'and' and 'applyTo' definitions must be overriden in concrete subclasses */
-  trait Monoidal[+A] extends Functor[A] { self : Fun[A] =>
-    def and[B](fb : => Fun[B]) : Fun[(A, B)] = ((a : A) => (b : B) => (a, b))(this)(fb)
-    def applyTo[B](fab : Fun[A => B]) : Fun[B] = fab and this map { case (f, a) => f(a) }
+  trait Monoidal[+A] extends Functor[A] { self : M[A] =>
+    def and[B](fb : => M[B]) : M[(A, B)] = ((a : A) => (b : B) => (a, b))(this)(fb)
+    def applyTo[B](fab : M[A => B]) : M[B] = fab and this map { case (f, a) => f(a) }
   }
 }

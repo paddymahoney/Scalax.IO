@@ -12,34 +12,46 @@
 
 package scalax.rules
 
-import _root_.scala.collection.mutable.HashMap
+import scala.collection.mutable.HashMap
 
 trait MemoisableRules extends Rules {
   type S <: Memoisable[S]
   
-  def memo[A](key : AnyRef, f : S => Result[A]) : Rule[A] = rule[A] { ctx => ctx.memo(key, f) }
+  override def createRule[In, Out, A, X](name : String, f : In => rules.Result[Out, A, X]) = super.createRule(name, (in : In) => in match {
+      case s : Memoisable[In] => s.memo(name, f)
+      case _ => f(in)
+    })
+  
+  //def memo[A](key : AnyRef, f : S => Result[A]) : Rule[A] = createRule(key.toString, f)
 }
 
 trait Memoisable[Context] {
-  def memo[A](key : AnyRef, f : Context => Result[Context, A, Any]) : Result[Context, A, Any]
+  def memo[A](key : AnyRef, f : Context => A) : A
+}
+
+
+object DefaultMemoisable {
+  var debug = false
 }
 
 trait DefaultMemoisable[Context <: Memoisable[Context]] extends Memoisable[Context] {
-  
   self : Context =>
 
-  protected val map = new HashMap[AnyRef, Result[Context, Any, Any]]
+  protected val map = new HashMap[AnyRef, Any]
 
-  def memo[T](key : AnyRef, f : Context => Result[Context, T, Any]) = {
-    map.getOrElseUpdate(key, compute(key, f)).asInstanceOf[Result[Context, T, Any]]
+  def memo[A](key : AnyRef, f : Context => A) = {
+    map.getOrElseUpdate(key, compute(key, f)).asInstanceOf[A]
   }
   
-  protected def compute[T](key : AnyRef, f : Context => Result[Context, T, Any]) = f(this) match {
-    case success @ Success(context, value) => onSuccess(key, success); success
-    case failure => failure
+  protected def compute[A](key : AnyRef, f : Context => A) = f(this) match {
+    case success : Success[Context, _] => onSuccess(key, success); success
+    case other => other
   }
   
-  protected def onSuccess[T](key : AnyRef,  result : Success[Context, T]) { }
+  protected def onSuccess[T](key : AnyRef,  result : Success[Context, T])  { 
+    val Success(out, t) = result
+    if(DefaultMemoisable.debug) println(key + " -> " + t + " (" + out + ")") 
+  }
 }
 
 

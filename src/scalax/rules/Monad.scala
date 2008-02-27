@@ -12,16 +12,20 @@
 
 package scalax.rules
 
+trait Monad[+A] extends Functor[A] { 
+  type M[+A] <: Monad[A]
+  def flatMap[B](f : A => M[B]) : M[B]
+}
+
 trait Monads extends UnitFunctors {
-  type Fun[+A] <: Monad[A]
+  type M[+A] <: Monad[A]
   
-  trait Monad[+A] extends Functor[A] { this : Fun[A] =>
-    def flatMap[B](f : A => Fun[B]) : Fun[B]
+  trait Monad[+A] extends Functor[A] with rules.Monad[A] { this : M[A] =>
     def map[B](f : A => B) = flatMap { a => unit(f(a)) }
   }
   
-  trait Zero extends Monad[Nothing] with ZeroFilter { this : Fun[Nothing] =>
-    def flatMap[B](f : Nothing => Fun[B]) : Fun[B] = this
+  trait ZeroMonad extends Monad[Nothing] with ZeroFunctor { this : M[Nothing] =>
+    def flatMap[B](f : Nothing => M[B]) : M[B] = this
   }
 }
 
@@ -29,10 +33,10 @@ trait Monads extends UnitFunctors {
 trait StateReader extends Monads {
   type S
   
-  def get : Fun[S]
-  def read[A](f : S => A) : Fun[A]
-  def set(s : => S) : Fun[S]
-  def update(f : S => S) : Fun[S]
+  def get : M[S]
+  def read[A](f : S => A) : M[A]
+  def set(s : => S) : M[S]
+  def update(f : S => S) : M[S]
 }
 
 

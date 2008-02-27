@@ -17,20 +17,24 @@ package scalax.rules;
  * @see the Scala parser combinator
  */
 case class ~[+A, +B](_1 : A, _2 : B)
-   
-
-sealed abstract class Result[+Out, +A, +X] {
   
+sealed abstract class Result[+Out, +A, +X] extends Functor[A] with OrElse[A] {
+  type M[+B] = Result[_ >: Out, B, _ >: X]
 }
 
 case class Success[+Out, +A](out : Out, value : A) extends Result[Out, A, Nothing] {
-  
+  def map[B](f : A => B) = Success(out, f(value))
+  def orElse[B >: A](other : => M[B]) = this
 }
 
-case class Failure[+X](x : X) extends Result[Nothing, Nothing, X]
+case class Failure[+X](x : X) extends Result[Nothing, Nothing, X] {
+  def map[B](f : Nothing => B) = this
+  def orElse[B](other : => M[B]) = other
+}
 
 case class Error[+X](override val x : X) extends Failure(x)
 
+  
 //object Failure {
 //  def apply : Failure[Unit] = Failure((), true)
 //}

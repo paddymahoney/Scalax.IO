@@ -28,6 +28,7 @@ trait SeqRules[A] extends Rules {
 
   /** Allows rules like 'a' to 'z' */
   implicit def iteratorToChoice[B <: Iterator[A]](iterator : B) : Rule[A] = choice(iterator.toList)
+  implicit def iteratorToChoiceSeq[B <: Iterator[A]](iterator : B) : SeqRule[S, A, Any] = seqRule(iteratorToChoice(iterator))
 }
 
        
@@ -35,7 +36,7 @@ trait SeqRules[A] extends Rules {
  * Rules that operate on a sequence of characters.
  */
 trait CharSeqRules extends SeqRules[Char] {
-  implicit def readString(string : String) : Rule[String] = readSeq(string)
+  implicit def readString(string : String) : Rule[String] = readSeq(string) as string
   implicit def stringToInput(string : String) : ArrayInput[Char] = new ArrayInput[Char](string.toArray)
 
   def toString(seq : Seq[Any]) = seq.mkString("")
@@ -46,6 +47,18 @@ trait CharSeqRules extends SeqRules[Char] {
 
   def trim[A](rule : Rule[A]) = whitespace -~ rule ~- whitespace
 }
+
+
+trait StringScanner extends CharSeqRules {
+  type S = String
+  
+  val item = rule { 
+    case "" => Failure("End of input")
+    case s => Success(s.substring(1), s.charAt(0)) 
+  }
+}
+
+
 
 
 /**

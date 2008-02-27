@@ -14,7 +14,7 @@ package scalax.rules.syntax;
 
 class PrettyPrinter[T <: Input[Char, T] with Memoisable[T]] extends ScalaParser[T] {
 
-  val index = position ^^ (_ index)
+  val index = position ^^ (_())
   def at(pos : Int) = index filter (_ == pos)
   
   val escapeItem : Rule[String] = (newline -^ "<br />\n"
@@ -29,10 +29,10 @@ class PrettyPrinter[T <: Input[Char, T] with Memoisable[T]] extends ScalaParser[
   
   /** Look for a memoised result.  This is very ugly - try to think of a better way! */
   def recall(key : String) = (
-      multiple(true) -~ endStatement(true) -~ memo(key, failure)
-      | multiple(true) -~ endStatement(false) -~ memo(key, failure)
-      | multiple(false) -~ endStatement(true) -~ memo(key, failure)
-      | multiple(false) -~ endStatement(false) -~ memo(key, failure)) -~ index
+      multiple(true) -~ endStatement(true) -~ createRule(key, failure)
+      | multiple(true) -~ endStatement(false) -~ createRule(key, failure)
+      | multiple(false) -~ endStatement(true) -~ createRule(key, failure)
+      | multiple(false) -~ endStatement(false) -~ createRule(key, failure)) -~ index
       
   def escape(key : String) = ((recall(key) &) >> escapeTo &) ~- recall(key)
   def span(styleClass : String)(rule : Rule[String]) = rule ^^ ("<span class=\"" + styleClass + "\">" + _ + "</span>")

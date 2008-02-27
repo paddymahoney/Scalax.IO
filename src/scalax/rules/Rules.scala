@@ -12,28 +12,25 @@
 
 package scalax.rules
 
-import Rule._, SeqRule._
-
 /** Defines Rules that apply to a particular Context.
  * 
  * The result may be:
- * - Success, with a resulting Context and a value of some type.  Several successful rules may be applied in sequence and their values combined.
+ * - Success, with a resulting context and a value of some type.  Several successful rules may be applied in sequence and their values combined.
  * - Failure. A failure may result in some alternative rule being applied.
- * - Error, indicated by throwing a RuleException.  No further rules should be attempted.
+ * - Error.  No further rules should be attempted.
  *
  * @requires S the context to which rules apply.
  *
  * @author Andrew Foggin
- * @author inspired by the Scala parser combinator
+ 
+ * Inspired by the Scala parser combinator.
  */
-trait Rules { //extends MonadsWithZero with StateReader {
+trait Rules extends RuleFactory { //extends MonadsWithZero with StateReader {
   type S
-  type Rule[+A] = SeqRule[S, A, Any]
+  type Rule[+A] = rules.Rule[S, S, A, Any]
   type Result[A] = rules.Result[S, A, Any]
   
-  implicit def rule[A](f : S => Result[A]) : Rule[A] = SeqRule(f)
-  
-  def unit[A](a : => A) = rule[A] { s => Success(s, a) }
+  implicit def rule[A](f : S => Result[A]) : Rule[A] = createRule(f)
   
   def get = rule[S] { s => Success(s, s) }
   def read[A](f : S => A) = rule[A] { s => Success(s, f(s)) }
@@ -41,7 +38,7 @@ trait Rules { //extends MonadsWithZero with StateReader {
   def update(f : S => S) = rule { s => Success(f(s), s) }
   
   /** Creates a Rule that always succeeds with the specified value. */
-  def success[A](a : A) = unit(a)
+  def success[A](a : A) = rule[A] { s => Success(s, a) }
     
   val failure = rule[Nothing] { s => Failure() }
   

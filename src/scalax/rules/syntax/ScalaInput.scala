@@ -34,6 +34,19 @@ class ScalaInput[T <: Input[Char, T] with Memoisable[T]](val input : T, val stat
   def lastTokenCanEndStatement = state.lastTokenCanEndStatement
   def lastTokenCanEndStatement_=(value : Boolean) = state_=(ParserState(multipleStatementsAllowed, value))
 
+  def memo[B](key : AnyRef, f : ScalaInput[T] => B) : B = {
+    // Uses the underlying input's memo function by augmenting both the key and the result with the parser state
+    val result = input.memo((key, state), input => f(this) match {
+      case Success(context : ScalaInput[T], b) => Success(context.input, (b, context))
+      case other => other
+    })
+    result match {
+      case Success(input, (b, context)) => Success(context, b).asInstanceOf[B]
+      case other => other.asInstanceOf[B]
+    }
+  }
+
+  /*
   def memo[B](key : AnyRef, f : ScalaInput[T] => Result[ScalaInput[T], B, Any]) : Result[ScalaInput[T], B, Any] = {
     // Uses the underlying input's memo function by augmenting both the key and the result with the parser state
     val result = input.memo((key, state), input => f(this) match {
@@ -45,6 +58,7 @@ class ScalaInput[T <: Input[Char, T] with Memoisable[T]](val input : T, val stat
       case _ => Failure(())
     }
   }
+  */
 
   override def toString = state + input.toString
 }

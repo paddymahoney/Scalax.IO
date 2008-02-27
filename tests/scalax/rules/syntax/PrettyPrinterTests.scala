@@ -25,11 +25,11 @@ object Hello extends Application {
 }"""
   
 val html = """<br />
-<span class="keyword">package</span>&nbsp;a.b.c<br />
+<span class="keyword">package</span>&#160;a.b.c<br />
 <br />
-<span class="comment">/**&nbsp;my&nbsp;comment&nbsp;*/</span><br />
-<span class="keyword">object</span>&nbsp;Hello&nbsp;<span class="keyword">extends</span>&nbsp;Application&nbsp;{<br />
-&nbsp;&nbsp;println(<span class="literal">"Hello&nbsp;World!"</span>)<br />
+<span class="comment">/**&#160;my&#160;comment&#160;*/</span><br />
+<span class="keyword">object</span>&#160;Hello&#160;<span class="keyword">extends</span>&#160;Application&#160;{<br />
+&#160;&#160;println(<span class="literal">"Hello&#160;World!"</span>)<br />
 }"""
   
   val prettyPrinter = new PrettyPrinter[MemoisableStringInput] {

@@ -12,36 +12,50 @@
 
 package scalax.rules
 
-object Rule {
-  
-  implicit def apply[In, Out, A, X](f : In => Result[Out, A, X]) : Rule[In, Out, A, X] = new Rule[In, Out, A, X] {
-    def apply(in : In) = f(in)
-  }
-  
-  def success[Out, A](out : Out, a : A) = Rule { in : Any => Success(out, a) }
-  
-  def failure[X](x : X) = Rule { in : Any => Failure(x) }
-  
-  def error[X](x : X) = Rule { in : Any => Error(x) }
+object RuleNamer {
+  private var n = 0
+  def newName() = { n += 1; "$" + (n - 1) }
 }
 
-object SeqRule {
+trait RuleFactory {
+  def from[In] = new {
+    def apply[Out, A, X](f : In => Result[Out, A, X]) = createRule(f)
+    def success[Out, A](out : Out, a : A) = apply { in => Success(out, a) }
+    def failure[X](x : X) = apply { in => Failure(x) }
+    def error[X](x : X) = apply { in => Error(x) }
+    def unit[A](a : A) = apply { in => Success(in, a) }
+    def read = apply { in => Success(in, in) }
+  }
   
-  implicit def apply[In, Out <: In, A, X](f : In => Result[Out, A, X]) : SeqRule[In, A, X] = new SeqRule[In, A, X] {
+  def createRule[In, Out, A, X](_name : String, f : In => Result[Out, A, X]) : Rule[In, Out, A, X] = new Rule[In, Out, A, X] {
+    val name = _name
+    val factory = RuleFactory.this
     def apply(in : In) = f(in)
   }
 
-  def read[In] = SeqRule { in : In => Success(in, in) }
+  implicit def createRule[In, Out, A, X](f : In => Result[Out, A, X]) : Rule[In, Out, A, X] = new Rule[In, Out, A, X] {
+    val name = RuleNamer.newName()
+    val factory = RuleFactory.this
+    def apply(in : In) = f(in)
+  }
+
+  implicit def seqRule[In, A, X](rule : Rule[In, In, A, X]) : SeqRule[In, A, X] = new SeqRule(rule)
   
-  def unit[In, A](a : A) = SeqRule { in : In => Success(in, a) }
-  
+  def success[Out, A](out : Out, a : A) = from[Any] success(out, a)
+  def failure[X](x : X) = from[Any] failure(x)
+  def error[X](x : X) = from[Any] error(x)
 }
 
-import Rule._
 
 trait Rule[-In, +Out, +A, +X] extends (In => Result[Out, A, X]) { 
+  val name : String
+  val factory : RuleFactory
   
-  def flatMap[Out2, B, X2 >: X](fa2ruleb : A => Out => Result[Out2, B, X2]) = Rule { 
+  import factory._
+  
+  def as(name : String) = createRule(name, this)
+  
+  def flatMap[Out2, B, X2 >: X](fa2ruleb : A => Out => Result[Out2, B, X2]) = createRule { 
     in : In => apply(in) match {
       case Success(out, a) => fa2ruleb(a)(out)
       case f @ Failure(_) => f
@@ -52,7 +66,7 @@ trait Rule[-In, +Out, +A, +X] extends (In => Result[Out, A, X]) {
 
   def filter(f : A => Boolean) = flatMap { a => out => if(f(a)) Success(out, a) else Failure(()) }
 
-  def orElse[In2 <: In, Out2 >: Out, A2 >: A, Y](other : => Rule[In2, Out2, A2, Y]) = Rule { 
+  def orElse[In2 <: In, Out2 >: Out, A2 >: A, Y](other : => Rule[In2, Out2, A2, Y]) = createRule { 
     in : In2 => apply(in) match {
       case s @ Success(_, _) => s
       case Error(x : Y) => Error(x)
@@ -85,16 +99,16 @@ trait Rule[-In, +Out, +A, +X] extends (In => Result[Out, A, X]) {
   def ~>[Out2, B, X2 >: X](next : => Out => Result[Out2, A => B, X2]) = for (a <- this; fa2b <- next) yield fa2b(a)
   
   /** Creates a rule that suceeds only if this rule would fail on the given context. */
-  def unary_! = Rule[In, _ <: In, X, A] {
-    in : In => apply(in) match {
+  def unary_! = createRule[In, _ <: In, X, A] { in : In => 
+    apply(in) match {
       case Success(_, a) => Failure(a)
       case Failure(x) => Success(in, x)
     }
   }
   
   /** Creates a rule that succeeds if this rule succeeds, but returns the original input. */
-  def & = Rule[In, _ <: In, A, X] {
-    in => apply(in) match {
+  def & = createRule[In, _ <: In, A, X] { in : In => 
+    apply(in) match {
       case Success(_, a) => Success(in, a)
       case f @ Failure(_) => f
     }
@@ -143,49 +157,7 @@ trait Rule[-In, +Out, +A, +X] extends (In => Result[Out, A, X]) {
   def >~>[Out2, B1, B2, B >: A <% B1 ~ B2, C, X2 >: X](f : (B1, B2) => Out => Result[Out2, C, X2]) = flatMap[Out2, C, X2] { a =>
     (a : B1 ~ B2) match { case b1 ~ b2 => f(b1, b2) } 
   }
-
-}
-
-import SeqRule._
-
-trait SeqRule[S, +A, +X] extends Rule[S, S, A, X] {
   
-  def ? = SeqRule { 
-    in : S => apply(in) match {
-      case Success(out, a) => Success(out, Some(a))
-      case _ => Success(in, None)
-    }
-  }
-
-  /** Creates a rule that always succeeds with a Boolean value.  
-   *  Value is 'true' if this rule succeeds, 'false' otherwise */
-  def -? = ? map { _ isDefined }
-        
-  def * = SeqRule { 
-    // tail-recursive function with reverse list accumulator
-    def rep(in : S, acc : List[A]) : (S, List[A]) = apply(in) match {
-       case Success(out, a) => rep(out, a :: acc)
-       case _ => (in, acc)
-    }
-    in : S => rep(in, Nil) match { case (out, list) => Success(out, list.reverse) }
-  }
-  
-  def + = this ~++ *
-    
-  def ~>*[B >: A](f : SeqRule[S, B => B, Any]) = for (a <- this; fs <- f*) yield fs.foldLeft[B](a) { (b, f) => f(b) }
-    
-  def ~*~[B >: A, X2 >: X](join : SeqRule[S, (B, B) => B, X2]) = {
-    this ~>* (for (f <- join; a <- this) yield f(_ : B, a))
-  }
-  
-  /** Repeats this rule one or more times with a separator (which is discarded) */
-  def +/(sep : S => Result[S, Any, Any]) = this ~++ (sep -~ this *)
-
-  /** Repeats this rule zero or more times with a separator (which is discarded) */
-  def */(sep : S => Result[S, Any, Any]) = +/(sep) | unit[S, List[A]](Nil)
-  
-  def *~-[Out, Y](end : => Rule[S, Out, Any, Y]) = (this - end *) ~- end
-  def +~-[Out, X2 >: X](end : => Rule[S, Out, Any, X2]) = (this - end +) ~- end
-
+  override def toString() = name
 }
 
