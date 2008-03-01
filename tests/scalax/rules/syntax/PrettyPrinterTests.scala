@@ -32,8 +32,8 @@ val html = """<br />
 &#160;&#160;println(<span class="literal">"Hello&#160;World!"</span>)<br />
 }"""
   
-  val prettyPrinter = new PrettyPrinter[MemoisableStringInput] {
-    def apply(source : String) = prettyPrintFor(compilationUnit)(new ScalaInput(new MemoisableStringInput(source)))
+  val prettyPrinter = new PrettyPrinter {
+    def apply(source : String) = prettyPrintFor(compilationUnit)(input(source))
   }
 
   "CompilationUnit" is { 

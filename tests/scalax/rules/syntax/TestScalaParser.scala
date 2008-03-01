@@ -12,18 +12,16 @@
 
 package scalax.rules.syntax.test
 
-object TestScalaParser extends ScalaParser[DefaultIncrementalInput] with TestScanner {
+object TestScalaParser extends SimpleScalaParser with TestScanner {
+  
+  def remaining(input : Input#State) = input.chars.drop(input.index).mkString("")
+
+  def input(string : String) = Input(string, 0)(true, false)
   
   implicit def anyToElement[T](any : T) = new Element[T] {
     val value = any
     val start = 0
     val length = 0
-  }
-  
-  def input(string : String) = {
-    val incrementalInput = new DefaultIncrementalInput
-    incrementalInput.edit(0, 0, string)
-    new ScalaInput(incrementalInput)
   }
   
   checkRule('this)("this" -> "this")

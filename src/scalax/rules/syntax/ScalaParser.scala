@@ -13,7 +13,6 @@
 package scalax.rules.syntax
 
 import Character._
-import  _root_.scala.collection.immutable.Set
 
 object ScalaParser {
   
@@ -50,20 +49,7 @@ import ScalaParser._
   *
   * based on Scala Language Specification.
  */
-abstract class ScalaParser[T <: Input[Char, T] with Memoisable[T]] extends Scanner with MemoisableRules with AbstractScalaParser {
-  type S = ScalaInput[T]
-  
-  /** rule that sets multiple statements status and returns the previous value */
-  def multiple(allow : Boolean) = read(_.multipleStatementsAllowed) ~- update(_.multipleStatementsAllowed = allow)
-  val multipleStatementsAllowed = predicate(_.multipleStatementsAllowed)
-
-  def lastTokenCanEndStatement(value : Boolean) = update(_.lastTokenCanEndStatement = value) 
-  val lastTokenCanEndStatement = predicate(_.lastTokenCanEndStatement)
-    
-  val position = context ^^ { ctx => () => ctx.index }
-}
-
-trait AbstractScalaParser extends CharSeqRules {
+trait ScalaParser extends CharSeqRules {
   
   /** Treat a symbol as a rule that matches the corresponding keyword */
   implicit def symbolToKeyword(symbol : Symbol) : Rule[String] = reservedId filter (_ == symbol.name)

@@ -15,7 +15,7 @@ package scalax.rules.syntax.test;
 import java.io.{BufferedReader, File, FileReader, Reader}
 
 
-object ReadFiles extends ScalaParser[ReaderInput] with Application {
+object ReadFiles extends SimpleScalaParser with Application {
   //process(new File("src/scalax/rules"))
   process(new File("../scala-trunk/src/compiler"))
   //process(new File("tests/scalax/rules/scala/TestIncrementalScalaParser.scala"))
@@ -28,8 +28,12 @@ object ReadFiles extends ScalaParser[ReaderInput] with Application {
   
   def read(file : File) {
     print(file + "...")
-    val input = new ScalaInput(ReaderInput.fromFile(file))
-    val result = compilationUnit(input)
+    val buffer = new StringBuffer()
+    val reader = new BufferedReader(new FileReader(file))
+    var line = ""
+    while ({ line = reader.readLine(); line } != null) buffer append line append "\n"
+    reader.close();
+    val result = compilationUnit(input(buffer.toString))
     result match {
       //case Success(value, rest) => println(value + "\nRemaining = \"" + rest)//.mkString("") + "\"")
       case Success(rest : Iterable[Char], value) if rest.mkString("") != "" => error(value + "\nRemaining = \"" + rest.mkString("") + "\"")

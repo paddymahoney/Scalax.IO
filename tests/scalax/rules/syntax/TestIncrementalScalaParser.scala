@@ -12,7 +12,8 @@
 
 package scalax.rules.syntax.test;
 
-object TestIncrementalScalaParser extends ScalaParser[DefaultIncrementalInput] with Application {
+object TestIncrementalScalaParser extends IncrementalScalaParser with Application {
+  
   
   val incrementalInput = new DefaultIncrementalInput
   val input = new ScalaInput(incrementalInput)

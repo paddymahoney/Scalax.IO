@@ -12,9 +12,11 @@
 
 package scalax.rules.syntax.test
 
-trait TestScanner extends Scanner with Application {
+trait TestScanner extends CharSeqRules with Application {
 
   def input(string : String) : S
+  
+  def remaining(s : S) : String
   
   def checkSuccess[A](input : String, result : Result[A], expected : A) {
     result match {
@@ -25,7 +27,7 @@ trait TestScanner extends Scanner with Application {
   
   def check[A](input : String, actual : Result[A], expected : A, rest : String) {
     actual match {
-      case Success(es, ea) => if (ea != expected && !es.mkString("").equals(rest)) 
+      case Success(es, ea) => if (ea != expected && !remaining(es).equals(rest)) 
         fail(input, actual, expected, rest)
       case _ => fail(input, actual, expected, rest)
     }
@@ -37,7 +39,7 @@ trait TestScanner extends Scanner with Application {
         "\nExpected success: " + expected + 
         "\nWith remaining input: \"" + rest + "\"" +
         "\n\nActual success value: " + result +
-        "\nWith remaining input: \"" + s.mkString("") + "\"") 
+        "\nWith remaining input: \"" + remaining(s) + "\"") 
       case _ => error ("Input: " + input + 
         "\nExpected success: " + expected + 
           "\nWith remaining input: \"" + rest + "\"" +

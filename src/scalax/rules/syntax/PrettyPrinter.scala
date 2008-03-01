@@ -12,7 +12,7 @@
 
 package scalax.rules.syntax;
 
-class PrettyPrinter[T <: Input[Char, T] with Memoisable[T]] extends ScalaParser[T] {
+class PrettyPrinter extends SimpleScalaParser {
 
   val index = position ^^ (_())
   def at(pos : Int) = index filter (_ == pos)
@@ -25,14 +25,12 @@ class PrettyPrinter[T <: Input[Char, T] with Memoisable[T]] extends ScalaParser[
     
   def escapeTo(pos : Int) = escapeItem *~- at(pos) ^^ toString
   
-  def endStatement(allow : Boolean) = update(_.lastTokenCanEndStatement = allow)
-  
   /** Look for a memoised result.  This is very ugly - try to think of a better way! */
   def recall(key : String) = (
-      multiple(true) -~ endStatement(true) -~ createRule(key, failure)
-      | multiple(true) -~ endStatement(false) -~ createRule(key, failure)
-      | multiple(false) -~ endStatement(true) -~ createRule(key, failure)
-      | multiple(false) -~ endStatement(false) -~ createRule(key, failure)) -~ index
+      multiple(true) -~ lastTokenCanEndStatement(true) -~ createRule(key, failure)
+      | multiple(true) -~ lastTokenCanEndStatement(false) -~ createRule(key, failure)
+      | multiple(false) -~ lastTokenCanEndStatement(true) -~ createRule(key, failure)
+      | multiple(false) -~ lastTokenCanEndStatement(false) -~ createRule(key, failure)) -~ index
       
   def escape(key : String) = ((recall(key) &) >> escapeTo &) ~- recall(key)
   def span(styleClass : String)(rule : Rule[String]) = rule ^^ ("<span class=\"" + styleClass + "\">" + _ + "</span>")
@@ -54,15 +52,4 @@ class PrettyPrinter[T <: Input[Char, T] with Memoisable[T]] extends ScalaParser[
       | escapeItem *) ^^ toString
       
   def prettyPrintFor(rule : Rule[Any]) = expect(((rule&) | none) -~ prettyPrint)
-}
-
-class MemoisableStringInput(val string : String, val index : Int) extends Input[Char, MemoisableStringInput] with DefaultMemoisable[MemoisableStringInput] {
-  def this(string : String) = this(string, 0)
-
-  lazy val next = if (index >= string.length) Failure(())
-      else Success(new MemoisableStringInput(string, index + 1), string.charAt(index))
-      
-  //override protected def onSuccess[T](key : AnyRef,  result : Success[T, MemoisableStringInput]) { 
-  //  println(key + " -> " + result) 
-  //}
 }
