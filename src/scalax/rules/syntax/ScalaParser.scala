@@ -61,9 +61,6 @@ abstract class ScalaParser[T <: Input[Char, T] with Memoisable[T]] extends Scann
   val lastTokenCanEndStatement = predicate(_.lastTokenCanEndStatement)
     
   val position = context ^^ { ctx => () => ctx.index }
-    
-  def token[T](key : String, rule : Rule[T], f : T => Boolean) : Rule[T] = !nl -~ skip -~ rule ~- (space*) >> tokenCanEndStatement(f) as key
-  def tokenCanEndStatement[T](f : T => Boolean)(t : T) = update(_.lastTokenCanEndStatement = f(t)) -~ success(t)
 }
 
 trait AbstractScalaParser extends CharSeqRules {
@@ -85,7 +82,8 @@ trait AbstractScalaParser extends CharSeqRules {
   val position : Rule[() => Int]
   def element[T](rule : Rule[T]) : Rule[Element[T]] = !nl -~ skip -~ position ~ rule ~ position ~- (space*) ^~~^ ScalaElement[T]
   
-  def token[T](key : String, rule : Rule[T], f : T => Boolean) : Rule[T]
+  def token[T](key : String, rule : Rule[T], f : T => Boolean) : Rule[T] = !nl -~ skip -~ rule ~- (space*) >> tokenCanEndStatement(f) as key
+  def tokenCanEndStatement[T](f : T => Boolean)(t : T) = lastTokenCanEndStatement(f(t)) -~ success(t)
   def endToken[T](key : String, rule : Rule[T]) : Rule[T] = token(key, rule, { t : T => true })
   
   lazy val space = choice(" \t")
