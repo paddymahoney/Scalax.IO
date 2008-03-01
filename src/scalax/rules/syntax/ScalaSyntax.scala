@@ -12,12 +12,6 @@
 
 package scalax.rules.syntax;
 
-object Element {
-  type Position = Input[Char, _]
-}
-
-import Element._
-
 trait Element[T] {
   def value : T
   def start : Int

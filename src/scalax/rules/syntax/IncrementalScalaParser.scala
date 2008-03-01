@@ -13,13 +13,14 @@
 package scalax.rules.syntax;
 
 /** 
-  *
-  * @author Andrew Foggin
+ *
+ * @author Andrew Foggin
  */
-class IncrementalScalaParser extends Scanner with MemoisableRules with ScalaParser {
-  type S = ScalaInput[DefaultIncrementalInput]
+class IncrementalScalaParser extends MemoisableRules with ScalaParser {
+  type S = ScalaInput
   
-  /** rule that sets multiple statements status and returns the previous value */
+  def item = rule { _.next }
+
   def multiple(allow : Boolean) = read(_.multipleStatementsAllowed) ~- update(_.multipleStatementsAllowed = allow)
   val multipleStatementsAllowed = predicate(_.multipleStatementsAllowed)
 
@@ -31,15 +32,15 @@ class IncrementalScalaParser extends Scanner with MemoisableRules with ScalaPars
 
 case class ParserState(multipleStatementsAllowed : Boolean, lastTokenCanEndStatement : Boolean) 
 
-class ScalaInput[T <: Input[Char, T] with Memoisable[T]](val input : T, val state : ParserState) 
-    extends Input[Char, ScalaInput[T]] with Memoisable[ScalaInput[T]]  {
+class ScalaInput(val input : IncrementalInput[Char], val state : ParserState) 
+    extends Input[Char] with Memoisable[ScalaInput]  {
 
-  def this(input : T) = this(input, ParserState(true, false))
+  def this(input : IncrementalInput[Char]) = this(input, ParserState(true, false))
   
   def index = input.index
   
-  def next = input.next match {
-    case Success(input, ch) => Success(new ScalaInput(input, state), ch)
+  def next : Result[ScalaInput, Char, Any] = input.next match {
+    case Success(input : IncrementalInput[Char], ch) => Success(new ScalaInput(input, state), ch)
     case _ => Failure(())
   }
   
@@ -51,10 +52,10 @@ class ScalaInput[T <: Input[Char, T] with Memoisable[T]](val input : T, val stat
   def lastTokenCanEndStatement = state.lastTokenCanEndStatement
   def lastTokenCanEndStatement_=(value : Boolean) = state_=(ParserState(multipleStatementsAllowed, value))
 
-  def memo[B](key : AnyRef, f : ScalaInput[T] => B) : B = {
+  def memo[B](key : AnyRef, f : ScalaInput => B) : B = {
     // Uses the underlying input's memo function by augmenting both the key and the result with the parser state
     val result = input.memo((key, state), input => f(this) match {
-      case Success(context : ScalaInput[T], b) => Success(context.input, (b, context))
+      case Success(context : ScalaInput, b) => Success(context.input, (b, context))
       case other => other
     })
     result match {
@@ -62,20 +63,6 @@ class ScalaInput[T <: Input[Char, T] with Memoisable[T]](val input : T, val stat
       case other => other.asInstanceOf[B]
     }
   }
-
-  /*
-  def memo[B](key : AnyRef, f : ScalaInput[T] => Result[ScalaInput[T], B, Any]) : Result[ScalaInput[T], B, Any] = {
-    // Uses the underlying input's memo function by augmenting both the key and the result with the parser state
-    val result = input.memo((key, state), input => f(this) match {
-      case Success(context, b) => Success(context.input, (b, context))
-      case _ => Failure(())
-    })
-    result match {
-      case Success(input, (b, context)) => Success(context, b)
-      case _ => Failure(())
-    }
-  }
-  */
 
   override def toString = state + input.toString
 }

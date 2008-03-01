@@ -42,32 +42,3 @@ object ReadFiles extends SimpleScalaParser with Application {
     }
   }
 }
-
-
-
-class ReaderInput(reader : Reader, val index : Int) extends Input[Char, ReaderInput] with DefaultMemoisable[ReaderInput] {
-  
-  def this(reader : Reader) = this(reader, 0)
-
-  override protected def onSuccess[T](key : AnyRef,  result : Success[ReaderInput, T]) { 
-    //println(key + " -> " + result) 
-  }
-
-  lazy val next = reader.read() match {
-    case -1 => 
-      //println("<EOF>@" + index)
-      Failure(())
-    case ch => 
-      //println(ch.asInstanceOf[Char] + "@" + index)
-      Success(new ReaderInput(reader, index + 1), ch.asInstanceOf[Char])
-  }
-  
-  def close() = reader.close()
-  
-  override def toString = "@" + index
-}
-
-object ReaderInput {
-  def fromFile(file : File) = new ReaderInput(new BufferedReader(new FileReader(file)))
-}
-

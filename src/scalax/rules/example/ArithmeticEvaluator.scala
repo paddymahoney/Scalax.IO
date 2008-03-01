@@ -12,7 +12,7 @@
 
 package scalax.rules.example
 
-trait ArithmeticEvaluator extends CharSeqRules {
+trait ArithmeticEvaluator extends Scanner {
   lazy val expr : Rule[Int] = term ~*~ (op('+', _ + _) | op('-', _ - _)) as "expr"
   lazy val term : Rule[Int] = factor ~*~ (op('*', _ * _) | op('/', _ / _)) as "term"
   lazy val factor : Rule[Int] = trim(number | '(' -~ expr ~- ')') as "factor" 
@@ -28,12 +28,11 @@ object ExampleUsage extends ArithmeticEvaluator with StringScanner with Applicat
 }
 
 object ExampleUsage2 extends ArithmeticEvaluator with IncrementalScanner with Application {
-  type S = DefaultIncrementalInput
-  val input = new DefaultIncrementalInput
   
   DefaultMemoisable.debug = true
   
   // set up initial text and evaluate
+  val input = new IncrementalInput[Char]
   input.edit(0, 0, "7 + 5 * (5+ 6 / 2 - 1)")
   println(evaluate(input))
   

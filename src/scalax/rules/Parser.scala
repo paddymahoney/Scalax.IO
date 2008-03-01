@@ -15,7 +15,7 @@ package scalax.rules
 /**
  * Rules that operate on sequential input
  */
-trait SeqRules[A] extends Rules {
+trait Parser[A] extends Rules {
   /** Succeeds with the first element of the input unless input is empty. */
   def item : Rule[A]
 
@@ -35,7 +35,7 @@ trait SeqRules[A] extends Rules {
 /**
  * Rules that operate on a sequence of characters.
  */
-trait CharSeqRules extends SeqRules[Char] {
+trait Scanner extends Parser[Char] {
   implicit def readString(string : String) : Rule[String] = readSeq(string) as string
   implicit def stringToInput(string : String) : ArrayInput[Char] = new ArrayInput[Char](string.toArray)
 
@@ -49,7 +49,7 @@ trait CharSeqRules extends SeqRules[Char] {
 }
 
 
-trait StringScanner extends CharSeqRules {
+trait StringScanner extends Scanner {
   type S = String
   
   val item = rule { 
@@ -57,24 +57,3 @@ trait StringScanner extends CharSeqRules {
     case s => Success(s.substring(1), s.charAt(0)) 
   }
 }
-
-
-
-
-/**
- * A Parser is used to define rules that operate on sequential input
- */
-trait Parser[A] extends SeqRules[A] {
-  type S <: Input[A, S]
-
-  /** Succeeds with the first element of the input unless input is empty. */
-  val item = rule[A] { input => input.next }
-
-  def view[B](transform : Rule[B])(input : S) = new View[A, B, S](transform, input, 0)
-}
-
-     
-/**
- * A Scanner is a parser for character input.
- */
-trait Scanner extends Parser[Char] with CharSeqRules

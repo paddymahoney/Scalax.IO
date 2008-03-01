@@ -12,7 +12,7 @@
 
 package scalax.rules.syntax.test
 
-trait TestScanner extends CharSeqRules with Application {
+trait TestScanner extends Scanner with Application {
 
   def input(string : String) : S
   

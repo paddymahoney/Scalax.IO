@@ -12,13 +12,13 @@
 
 package scalax.rules
 
-trait Input[+A, Context <: Input[A, Context]] extends Iterable[A] { self : Context =>
+trait Input[+A] extends Iterable[A] { 
 
-  def next : Result[Context, A, Unit]
+  def next : Result[Input[A], A, Any]
   def index : Int
 
   def elements = new Iterator[A] {
-    private var input : Context = Input.this
+    private var input : Input[A] = Input.this
     private var result = input.next
 
     def hasNext = result != Failure(())
@@ -32,20 +32,20 @@ trait Input[+A, Context <: Input[A, Context]] extends Iterable[A] { self : Conte
 }
 
 
-class ArrayInput[A](val array : Array[A], val index : Int) extends Input[A, ArrayInput[A]] {
+class ArrayInput[A](val array : Array[A], val index : Int) extends Input[A] {
   def this(array : Array[A]) = this(array, 0)
 
-  lazy val next = if (index >= array.length) Failure()
+  lazy val next : Result[ArrayInput[A], A, Any] = if (index >= array.length) Failure()
       else Success(new ArrayInput[A](array, index + 1), array(index))
  
   override lazy val toString = elements.mkString("\"", "", "\"")
 }
 
 
-class IterableInput[A](iterator : Iterator[A], val index : Int) extends Input[A, IterableInput[A]] {
+class IterableInput[A](iterator : Iterator[A], val index : Int) extends Input[A] {
   def this(iterable : Iterable[A]) = this(iterable.elements, 0)
 
-  lazy val next = if (!iterator.hasNext) Failure()
+  lazy val next : Result[IterableInput[A], A, Any] = if (!iterator.hasNext) Failure()
       else Success(new IterableInput(iterator, index + 1), iterator.next)
 
   override lazy val toString = elements.mkString("\"", "", "\"")
@@ -53,13 +53,13 @@ class IterableInput[A](iterator : Iterator[A], val index : Int) extends Input[A,
 
 
 /** View one type of input as another based on a transformation rule */
-class View[A, B, Context <: Input[A, Context]](
-    transform : Context => Result[Context, B, Any],
-    val input : Context,
+class View[A, B](
+    transform : Input[A] => Result[Input[A], B, Any],
+    val input : Input[A],
     val index : Int)
-    extends Input[B, View[A, B, Context]] {
+    extends Input[B] {
 
-  def next = transform(input) match {
+  def next : Result[Input[B], B, Unit] = transform(input) match {
     case Success(context, b) => Success(new View(transform, context, index + 1), b)
     case _ => Failure((), true)
   }

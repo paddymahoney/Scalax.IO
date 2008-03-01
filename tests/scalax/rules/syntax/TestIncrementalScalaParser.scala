@@ -15,23 +15,25 @@ package scalax.rules.syntax.test;
 object TestIncrementalScalaParser extends IncrementalScalaParser with Application {
   
   
-  val incrementalInput = new DefaultIncrementalInput
+  val incrementalInput = new IncrementalInput[Char]
   val input = new ScalaInput(incrementalInput)
   
   DefaultMemoisable.debug = true
 
-  val line = newline -^ "" | (!newline -~ item +) ~- (newline?) ^^ toString as "line"
-  val lines = view(line) _
+  //val line = newline -^ "" | (!newline -~ item +) ~- (newline?) ^^ toString as "line"
+  //val lines = view(line) _
+
+  //def view[B](transform : Rule[B])(input : IncrementalInput[Char]) = new View(transform, input, 0)
 
   def printCompilationUnit() {
     println; println("Compilation Unit: ")
     println(compilationUnit(input))
   }
   
-  def printLines() {
-    println; println("Lines: ")
-    println(lines(input).mkString("\n"))
-  }
+  //def printLines() {
+  //  println; println("Lines: ")
+  //  println(lines(input).mkString("\n"))
+  //}
 
   // set up initial text
   incrementalInput.edit(0, 0, """

@@ -12,26 +12,22 @@
 
 package scalax.rules
 
-trait IncrementalScanner extends Scanner with MemoisableRules {
-  type S <: IncrementalInput[Char, S]
+trait IncrementalScanner extends IncrementalParser[Char] with Scanner
+
+trait IncrementalParser[A] extends Parser[A] with MemoisableRules {
+  type S = IncrementalInput[A]
+  val item = rule { _.next }
 }
 
-class DefaultIncrementalInput extends IncrementalInput[Char, DefaultIncrementalInput] {
-  def element = new DefaultIncrementalInput
-}
+class IncrementalInput[A]
+    extends Input[A] 
+    with DefaultMemoisable[IncrementalInput[A]] 
+    with Ordered[IncrementalInput[A]] { self : IncrementalInput[A] =>
 
-trait IncrementalInput[A, Context <: IncrementalInput[A, Context]]
-    extends Input[A, Context] 
-    with DefaultMemoisable[Context] 
-    with Ordered[Context] { self : Context =>
-
-  var next : Result[Context, A, Unit] = Failure((), true)
+  var next : Result[IncrementalInput[A], A, Unit] = Failure((), true)
   var index : Int = 0
 
-  /** Create a new element. */
-  def element : Context
-  
-  def compare(other : Context) = index - other.index
+  def compare(other : IncrementalInput[A]) = index - other.index
 
   /**
    * Specifies a change to the document.
@@ -59,7 +55,7 @@ trait IncrementalInput[A, Context <: IncrementalInput[A, Context]]
    *  and all Success results up to pos that point beyond pos
    */
   protected def cleanResults(pos : Int) = map.retain { 
-    case (_, Success(elem : Input[A, Context], _)) if elem.index < pos => true 
+    case (_, Success(elem : IncrementalInput[A], _)) if elem.index < pos => true 
     case _ => false 
   }
 
@@ -71,7 +67,7 @@ trait IncrementalInput[A, Context <: IncrementalInput[A, Context]]
 
   /** Insert an element */
   protected def insert(value : A) {
-    val elem = element
+    val elem = new IncrementalInput[A]
     elem.next = next
     next = Success(elem, value)
   }

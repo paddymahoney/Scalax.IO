@@ -49,7 +49,7 @@ import ScalaParser._
   *
   * based on Scala Language Specification.
  */
-trait ScalaParser extends CharSeqRules {
+trait ScalaParser extends Scanner {
   
   /** Treat a symbol as a rule that matches the corresponding keyword */
   implicit def symbolToKeyword(symbol : Symbol) : Rule[String] = reservedId filter (_ == symbol.name)
