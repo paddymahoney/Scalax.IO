@@ -50,7 +50,7 @@ class CommandLineParser {
 		private val nonOpts = new ListBuffer[String]
 		arguments.foreach {
 			case f : Flag =>
-				flags(f) = flags.get(f).get(0) + 1
+				flags(f) = flags.get(f).getOrElse(0) + 1
 			case o : OptionValue[t] =>
 				vopts.get(o.option) match {
 					case Some(l) => l += o.value
@@ -67,7 +67,7 @@ class CommandLineParser {
 		val nonOptions = nonOpts.toList
 
 		/** Returns the number of times the given flag was used. */
-		def all(f : Flag) : Int = flags.get(f).get(0)
+		def all(f : Flag) : Int = flags.get(f).getOrElse(0)
 
 		/** Returns all the values supplied with this option. */
 		def all[A](o : OptionType[A]) : List[A] =

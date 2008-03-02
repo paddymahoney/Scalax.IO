@@ -40,9 +40,9 @@ class ConcurrentHashMap[K,V](val jmap : JConcurrentHashMap[K,V]) extends MapWrap
 	def replace(k : K, v : V) : V = jmap.replace(k, v)
 }
 
-class ConcurrentHashSet[A](val jmap : JConcurrentHashMap[A, Unit]) extends Set[A] {
+class ConcurrentHashSet[A](val jmap : JConcurrentHashMap[A, List[Any]]) extends Set[A] {
 	def this() = this(new JConcurrentHashMap(2))
-	def +=(elem : A) : Unit = jmap.put(elem, ())
+	def +=(elem : A) : Unit = jmap.put(elem, Nil)
 	def -=(elem : A) : Unit = jmap.remove(elem)
 	override def clear : Unit = jmap.clear()
 	override def clone : Set[A] = {
@@ -61,12 +61,12 @@ class ConcurrentHashSet[A](val jmap : JConcurrentHashMap[A, Unit]) extends Set[A
 	override def isEmpty : Boolean = jmap.isEmpty
 	def size : Int = jmap.size
 	def testAndAdd(elem : A) : Boolean = {
-		val r = jmap.put(elem, ())
-		if(r == null) false else true
+		val r = jmap.put(elem, Nil)
+		r != null
 	}
 	def testAndRemove(elem : A) : Boolean = {
 		val r = jmap.remove(elem)
-		if(r == null) false else true
+		r != null
 	}
 }
 
