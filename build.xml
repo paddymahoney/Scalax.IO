@@ -21,7 +21,8 @@
 
 	<target name="build" depends="init">
 		<mkdir dir="${build.dir}"/>
-		<fsc srcdir="${src.dir}" destdir="${build.dir}"
+		<scalac srcdir="${src.dir}" destdir="${build.dir}"
+			deprecation="on" unchecked="on" encoding="UTF-8"
 			classpathref="build.classpath" force="changed"/>
 	</target>
 
