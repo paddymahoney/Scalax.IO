@@ -20,7 +20,7 @@ trait ArithmeticEvaluator extends Scanner {
   
   private def op(r : Rule[Any], f : (Int, Int) => Int) = r -^ f
 
-  def evaluate = expect(expr ~- (!item | error("Invalid expression")))
+  def evaluate = expect(expr ~- (!item | failure("Invalid expression")))
 }
   
 object ExampleUsage extends ArithmeticEvaluator with StringScanner with Application {

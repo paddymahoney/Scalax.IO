@@ -28,16 +28,14 @@ trait Parser[A] extends Rules {
 
   /** Allows rules like 'a' to 'z' */
   implicit def iteratorToChoice[B <: Iterator[A]](iterator : B) : Rule[A] = choice(iterator.toList)
-  implicit def iteratorToChoiceSeq[B <: Iterator[A]](iterator : B) : SeqRule[S, A, Any] = seqRule(iteratorToChoice(iterator))
+  implicit def iteratorToChoiceSeq[B <: Iterator[A]](iterator : B) : SeqRule[S, A, Any, Nothing] = seqRule(iteratorToChoice(iterator))
 }
 
-       
 /**
  * Rules that operate on a sequence of characters.
  */
 trait Scanner extends Parser[Char] {
   implicit def readString(string : String) : Rule[String] = readSeq(string) as string
-  implicit def stringToInput(string : String) : ArrayInput[Char] = new ArrayInput[Char](string.toArray)
 
   def toString(seq : Seq[Any]) = seq.mkString("")
       

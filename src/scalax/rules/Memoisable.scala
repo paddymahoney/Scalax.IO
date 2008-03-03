@@ -15,18 +15,16 @@ package scalax.rules
 import scala.collection.mutable.HashMap
 
 trait MemoisableRules extends Rules {
-  type S <: Memoisable[S]
+  type S <: Memoisable
   
-  override def createRule[In, Out, A, X](name : String, f : In => rules.Result[Out, A, X]) = super.createRule(name, (in : In) => in match {
-      case s : Memoisable[In] => s.memo(name, f)
+  override def createRule[In, Out, A, X, Err](name : String, f : In => rules.Result[Out, A, X, Err]) = super.createRule(name, (in : In) => in match {
+      case s : Memoisable => s.memo(name, f(in))
       case _ => f(in)
     })
-  
-  //def memo[A](key : AnyRef, f : S => Result[A]) : Rule[A] = createRule(key.toString, f)
 }
 
-trait Memoisable[Context] {
-  def memo[A](key : AnyRef, f : Context => A) : A
+trait Memoisable {
+  def memo[A](key : AnyRef, a : => A) : A
 }
 
 
@@ -34,21 +32,19 @@ object DefaultMemoisable {
   var debug = false
 }
 
-trait DefaultMemoisable[Context <: Memoisable[Context]] extends Memoisable[Context] {
-  self : Context =>
-
+trait DefaultMemoisable extends Memoisable {
   protected val map = new HashMap[AnyRef, Any]
 
-  def memo[A](key : AnyRef, f : Context => A) = {
-    map.getOrElseUpdate(key, compute(key, f)).asInstanceOf[A]
+  def memo[A](key : AnyRef, a : => A) = {
+    map.getOrElseUpdate(key, compute(key, a)).asInstanceOf[A]
   }
   
-  protected def compute[A](key : AnyRef, f : Context => A) = f(this) match {
-    case success : Success[Context, _] => onSuccess(key, success); success
+  protected def compute[A](key : AnyRef, a : => A) = a match {
+    case success : Success[_, _] => onSuccess(key, success); success
     case other => other
   }
   
-  protected def onSuccess[T](key : AnyRef,  result : Success[Context, T])  { 
+  protected def onSuccess[S, T](key : AnyRef,  result : Success[S, T])  { 
     val Success(out, t) = result
     if(DefaultMemoisable.debug) println(key + " -> " + t + " (" + out + ")") 
   }

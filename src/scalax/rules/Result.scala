@@ -18,51 +18,26 @@ package scalax.rules;
  */
 case class ~[+A, +B](_1 : A, _2 : B)
   
-sealed abstract class Result[+Out, +A, +X] extends Functor[A] with OrElse[A] {
-  type M[+B] = Result[_ >: Out, B, _ >: X]
+sealed abstract class Result[+Out, +A, +X, + Err] extends Functor[A] with OrElse[A] {
+  type M[+B] = Result[_ >: Out, B, _ >: X, _ >: Err]
+  def mapFailure[Y](f : X => Y) : Result[Out, A, Y, Err]
 }
 
-case class Success[+Out, +A](out : Out, value : A) extends Result[Out, A, Nothing] {
+case class Success[+Out, +A](out : Out, value : A) extends Result[Out, A, Nothing, Nothing] {
   def map[B](f : A => B) = Success(out, f(value))
   def orElse[B >: A](other : => M[B]) = this
+  def mapFailure[Y](f : Nothing => Y) = this
 }
 
-case class Failure[+X](x : X) extends Result[Nothing, Nothing, X] {
+case class Failure[+X](x : X) extends Result[Nothing, Nothing, X, Nothing] {
   def map[B](f : Nothing => B) = this
   def orElse[B](other : => M[B]) = other
+  def mapFailure[Y](f : X => Y) = Failure(f(x))
 }
 
-case class Error[+X](override val x : X) extends Failure(x)
+case class Error[+Err](err : Err) extends Result[Nothing, Nothing, Nothing, Err] {
+  def map[B](f : Nothing => B) = this
+  def orElse[B](other : => M[B]) = this
+  def mapFailure[Y](f : Nothing => Y) = this
+}
 
-  
-//object Failure {
-//  def apply : Failure[Unit] = Failure((), true)
-//}
-/*
-object Result extends MonadsWithZero {
-  type Fun[+A] = Result[A]
-  
-  override def unit[A](a : => A) = Success(a)
-  override def zero = Failure
-}
-  
-/** 
- * A Result is either Success or Failure.
- *
- * @author Andrew Foggin
- */
-sealed abstract class Result[+A] extends Result.MonadWithZero[A] with Result.OrElse[A]
-      
-/** 
- * Result of a rule that was successfully applied.  
- */
-case class Success[+A](value : A) extends Result[A] {
-  def flatMap[B](f : A => Result[B]) = f(value)
-  def orElse[B >: A](other : => Result[B]) = this
-}
-      
-/** 
- * Result of a rule that could not be applied.
- */
-case object Failure extends Result[Nothing] with Result.ZeroOrElse
-*/

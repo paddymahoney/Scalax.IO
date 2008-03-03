@@ -33,14 +33,14 @@ class IncrementalScalaParser extends MemoisableRules with ScalaParser {
 case class ParserState(multipleStatementsAllowed : Boolean, lastTokenCanEndStatement : Boolean) 
 
 class ScalaInput(val input : IncrementalInput[Char], val state : ParserState) 
-    extends Input[Char] with Memoisable[ScalaInput]  {
+    extends Input[Char] with Memoisable  {
 
   def this(input : IncrementalInput[Char]) = this(input, ParserState(true, false))
   
   def index = input.index
   
-  def next : Result[ScalaInput, Char, Any] = input.next match {
-    case Success(input : IncrementalInput[Char], ch) => Success(new ScalaInput(input, state), ch)
+  def next : Result[ScalaInput, Char, Any, Nothing] = input.next match {
+    case Success(input, ch) => Success(new ScalaInput(input, state), ch)
     case _ => Failure(())
   }
   
@@ -52,15 +52,15 @@ class ScalaInput(val input : IncrementalInput[Char], val state : ParserState)
   def lastTokenCanEndStatement = state.lastTokenCanEndStatement
   def lastTokenCanEndStatement_=(value : Boolean) = state_=(ParserState(multipleStatementsAllowed, value))
 
-  def memo[B](key : AnyRef, f : ScalaInput => B) : B = {
+  def memo[A](key : AnyRef, a : => A) : A = {
     // Uses the underlying input's memo function by augmenting both the key and the result with the parser state
-    val result = input.memo((key, state), input => f(this) match {
-      case Success(context : ScalaInput, b) => Success(context.input, (b, context))
+    val result = input.memo((key, state), a match {
+      case Success(context : ScalaInput, a) => Success(context.input, (a, context))
       case other => other
     })
     result match {
-      case Success(input, (b, context)) => Success(context, b).asInstanceOf[B]
-      case other => other.asInstanceOf[B]
+      case Success(input, (a, context)) => Success(context, a).asInstanceOf[A]
+      case other => other.asInstanceOf[A]
     }
   }
 

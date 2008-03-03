@@ -21,10 +21,10 @@ trait IncrementalParser[A] extends Parser[A] with MemoisableRules {
 
 class IncrementalInput[A]
     extends Input[A] 
-    with DefaultMemoisable[IncrementalInput[A]] 
+    with DefaultMemoisable 
     with Ordered[IncrementalInput[A]] { self : IncrementalInput[A] =>
 
-  var next : Result[IncrementalInput[A], A, Unit] = Failure((), true)
+  var next : Result[IncrementalInput[A], A, Unit, Nothing] = Failure((), true)
   var index : Int = 0
 
   def compare(other : IncrementalInput[A]) = index - other.index
@@ -55,7 +55,7 @@ class IncrementalInput[A]
    *  and all Success results up to pos that point beyond pos
    */
   protected def cleanResults(pos : Int) = map.retain { 
-    case (_, Success(elem : IncrementalInput[A], _)) if elem.index < pos => true 
+    case (_, Success(elem : IncrementalInput[_], _)) if elem.index < pos => true 
     case _ => false 
   }
 

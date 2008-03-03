@@ -27,8 +27,8 @@ package scalax.rules
  */
 trait Rules extends RuleFactory { //extends MonadsWithZero with StateReader {
   type S
-  type Rule[+A] = rules.Rule[S, S, A, Any]
-  type Result[A] = rules.Result[S, A, Any]
+  type Rule[+A] = rules.Rule[S, S, A, Any, Nothing]
+  type Result[A] = rules.Result[S, A, Any, Nothing]
   
   implicit def rule[A](f : S => Result[A]) : Rule[A] = createRule(f)
   
@@ -56,6 +56,7 @@ trait Rules extends RuleFactory { //extends MonadsWithZero with StateReader {
   def expect[A](rule : Rule[A]) : S => A = (context) => rule(context) match {
     case Success(_, a) => a
     case Failure(x) => throw new RuntimeException("Unexpected failure: " + x)
+    case Error(x) => throw new RuntimeException("Unexpected failure: " + x)
   }
     
   def select[A](rules : Collection[Rule[A]]) : Rule[A] = rules.reduceLeft[Rule[A]](_ | _)
