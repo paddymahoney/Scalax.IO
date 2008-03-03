@@ -1,5 +1,7 @@
 <?xml version="1.0"?>
 <project name="scalax" default="jar">
+	<property file="build.local.properties"/>
+	<property file="${user.home}/build.local.properties"/>
 	<property name="version" value="0.0"/>
 	<property name="src.dir" value="${basedir}/src"/>
 	<property name="build.dir" value="${basedir}/build"/>
