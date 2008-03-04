@@ -67,6 +67,13 @@ abstract class ReaderResource[R <: Reader] extends CloseableResource[R] {
 		}
 }
 
+object ReaderResource {
+	def string(s : String) =
+		new ReaderResource[StringReader] {
+			def unsafeOpen() = new StringReader(s)
+		}
+}
+
 abstract class OutputStreamResource[O <: OutputStream] extends CloseableResource[O] {
 	def buffered : OutputStreamResource[BufferedOutputStream] =
 		new OutputStreamResource[BufferedOutputStream] {
