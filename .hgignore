@@ -1,5 +1,6 @@
 ^tmp(/|$)
 ^build(/|$)
+^build-tests(/|$)
 ^dist(/|$)
 ^bin(/|$)
 ^target(/|$)
