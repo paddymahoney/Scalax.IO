@@ -16,5 +16,6 @@ object ScalaxTests extends TestSuite("Scalax") {
 	include(CommandLineTests)
 	include(CsvTests)
 	include(StreamHelpTests)
+	include(ResourcesTests)
 	include(ConcurrentLinkedListTests)
 }

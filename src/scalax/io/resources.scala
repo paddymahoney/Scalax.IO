@@ -27,6 +27,8 @@ abstract class InputStreamResource[I <: InputStream] extends CloseableResource[I
 			def unsafeOpen() = new BufferedInputStream(InputStreamResource.this.unsafeOpen())
 			override def buffered = this
 		}
+
+	def slurp() = for (is <- this) yield StreamHelp.slurp(is)
 	
 	/* Obtains a Reader using the system default charset. */
 	def reader =
@@ -63,6 +65,8 @@ object InputStreamResource {
 }
 
 abstract class ReaderResource[R <: Reader] extends CloseableResource[R] {
+	def slurp() = for (r <- this) yield StreamHelp.slurp(r)
+	
 	def buffered : ReaderResource[BufferedReader] =
 		new ReaderResource[BufferedReader] {
 			def unsafeOpen() = new BufferedReader(ReaderResource.this.unsafeOpen())
