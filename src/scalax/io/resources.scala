@@ -62,6 +62,12 @@ object InputStreamResource {
 	
 	def bytes(b : Array[Byte]) : InputStreamResource[ByteArrayInputStream] =
 		bytes(b, 0, b.length)
+	
+	def file(file : File) =
+		new InputStreamResource[FileInputStream] {
+			def unsafeOpen() = new FileInputStream(file)
+		}
+	                                            
 }
 
 abstract class ReaderResource[R <: Reader] extends CloseableResource[R] {
@@ -112,6 +118,14 @@ abstract class OutputStreamResource[O <: OutputStream] extends CloseableResource
 				new OutputStreamWriter(OutputStreamResource.this.unsafeOpen(), cs)
 		}
 	}
+}
+
+object OutputStreamResource {
+	def file(file : File) =
+		new OutputStreamResource[FileOutputStream] {
+			def unsafeOpen() =
+				new FileOutputStream(file)
+		}
 }
 
 abstract class WriterResource[W <: Writer] extends CloseableResource[W] {

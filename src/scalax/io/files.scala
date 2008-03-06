@@ -39,20 +39,12 @@ class FileExtras(file : File) {
 	def printWriter = bufferedWriter.printWriter
 
 	/** Obtains an InputStream. */
-	def inputStream =
-		new InputStreamResource[FileInputStream] {
-			def unsafeOpen() =
-				new FileInputStream(file)
-		}
+	def inputStream = InputStreamResource.file(file)
 	
 	def bufferedInputStream = inputStream.buffered
 
 	/** Obtains a OutputStream. */
-	def outputStream =
-		new OutputStreamResource[FileOutputStream] {
-			def unsafeOpen() =
-				new FileOutputStream(file)
-		}
+	def outputStream = OutputStreamResource.file(file)
 	
 	def bufferedOutputStream = outputStream.buffered
 
