@@ -52,6 +52,16 @@ abstract class InputStreamResource[I <: InputStream] extends CloseableResource[I
 	def lines(charset : String) = reader(charset).lines
 }
 
+object InputStreamResource {
+	def bytes(array : Array[Byte], offset : Int, length : Int) =
+		new InputStreamResource[ByteArrayInputStream] {
+			def unsafeOpen() = new ByteArrayInputStream(array, offset, length)
+		}
+	
+	def bytes(b : Array[Byte]) : InputStreamResource[ByteArrayInputStream] =
+		bytes(b, 0, b.length)
+}
+
 abstract class ReaderResource[R <: Reader] extends CloseableResource[R] {
 	def buffered : ReaderResource[BufferedReader] =
 		new ReaderResource[BufferedReader] {
