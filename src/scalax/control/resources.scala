@@ -40,11 +40,11 @@ abstract class ManagedResource[+A] { self =>
 	 * for-comprehension. */
 	def unsafeClose(v : Handle) : Unit
 	
-	def closeQuietly(v : Handle) {
+	def unsafeCloseQuietly(v : Handle) {
 		try {
 			unsafeClose(v)
 		} catch {
-			case _ =>
+			case e => e.printStackTrace()
 		}
 	}
 
@@ -64,7 +64,7 @@ abstract class ManagedResource[+A] { self =>
 			unsafeClose(v)
 			r
 		} finally {
-			closeQuietly(v)
+			unsafeCloseQuietly(v)
 		}
 	}
 
