@@ -99,7 +99,7 @@ class CommandLineParser {
 		/** Specifies which other options may be used in conjunction with this
 		 * one. This option must appear in its own allow list if it is allowed
 		 * to appear more than once. */
-		def allow : collection.Set[OptionSpec]
+		def allow : scala.collection.Set[OptionSpec]
 
 		// Voodoo to obtain a list of the declared options
 		opts += this

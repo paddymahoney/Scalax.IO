@@ -70,20 +70,35 @@ object StreamHelp
 		}
 		count
 	}
+	
+	/** 
+	 * Iterates over the lines of the reader.
+	 * Keeps reader open even after reaching EOF, reader must be closed explicitly.
+	 */
+	def lines(br : BufferedReader) = new Iterator[String] {
+		var fetched = false
+		var nextLine : String = _
+		
+		def hasNext = {
+			if (!fetched) {
+				nextLine = br.readLine()
+				fetched = true
+			}
+			nextLine ne null
+		}
+		
+		def next() = {
+			if (!hasNext) throw new NoSuchElementException("EOF")
+			fetched = false
+			nextLine
+		}
+		
+	}
 
 	/** Iterates over the lines of the reader. */
 	def lines(in : Reader) : Iterator[String] = {
 		val br = ensureBuffered(in)
-		new Iterator[String] {
-			var n = br.readLine()
-			def hasNext = n != null
-			def next = {
-				val l = n
-				n = br.readLine()
-				if(n == null) br.close()
-				l
-			}
-		}
+		lines(br)
 	}
 
 	/** Wrap this Reader into a BufferedReader if it isn't one already. */

@@ -22,62 +22,31 @@ class FileExtras(file : File) {
 	/** Deletes the file or directory recursively. Returns false if it failed. */
 	def deleteRecursively() = FileHelp.deleteRecursively(file)
 
-	/** Obtains a BufferedReader using the system default charset. */
-	def reader =
-		new UntranslatedManagedResource[BufferedReader] {
-			def unsafeOpen() =
-				new BufferedReader(new InputStreamReader(new FileInputStream(file)))
-			def unsafeClose(r : BufferedReader) =
-				r.close()
-		}
+	/** Obtains a Reader using the system default charset. */
+	def reader = inputStream.reader
 
 	/** Obtains a BufferedReader using the supplied charset. */
-	def reader(charset : String) = {
-		// Do this lookup before opening the file, since it might fail.
-		val cs = Charset.forName(charset)
-		new UntranslatedManagedResource[BufferedReader] {
-			def unsafeOpen() =
-				new BufferedReader(new InputStreamReader(new FileInputStream(file), cs))
-			def unsafeClose(r : BufferedReader) =
-				r.close()
-		}
-	}
+	def reader(charset : String) = inputStream.reader(charset)
 
-	/** Obtains a PrintWriter using the system default charset. */
-	def writer =
-		new UntranslatedManagedResource[PrintWriter] {
-			def unsafeOpen() =
-				new PrintWriter(file)
-			def unsafeClose(r : PrintWriter) =
-				r.close()
-		}
+	/** Obtains a Writer using the system default charset. */
+	def writer = outputStream.writer
 
-	/** Obtains a PrintWriter using the supplied charset. */
-	def writer(charset : String) =
-		new UntranslatedManagedResource[PrintWriter] {
-			def unsafeOpen() =
-				new PrintWriter(file, charset)
-			def unsafeClose(r : PrintWriter) =
-				r.close()
-		}
+	/** Obtains a Writer using the supplied charset. */
+	def writer(charset : String) = outputStream.writer(charset)
+	
+	def bufferedWriter = writer.buffered
+	
+	def printWriter = bufferedWriter.printWriter
 
-	/** Obtains a BufferedInputStream. */
-	def inputStream =
-		new UntranslatedManagedResource[BufferedInputStream] {
-			def unsafeOpen() =
-				new BufferedInputStream(new FileInputStream(file))
-			def unsafeClose(s : BufferedInputStream) =
-				s.close()
-		}
+	/** Obtains an InputStream. */
+	def inputStream = InputStreamResource.file(file)
+	
+	def bufferedInputStream = inputStream.buffered
 
-	/** Obtains a BufferedOutputStream. */
-	def outputStream =
-		new UntranslatedManagedResource[BufferedOutputStream] {
-			def unsafeOpen() =
-				new BufferedOutputStream(new FileOutputStream(file))
-			def unsafeClose(s : BufferedOutputStream) =
-				s.close()
-		}
+	/** Obtains a OutputStream. */
+	def outputStream = OutputStreamResource.file(file)
+	
+	def bufferedOutputStream = outputStream.buffered
 
 	/** Obtains a FileChannel. */
 	def channel =
@@ -102,20 +71,10 @@ class FileExtras(file : File) {
 	def slurp(charset : String) = for(r <- reader(charset)) yield StreamHelp.slurp(r)
 
 	/** Views the file as a sequence of lines. */
-	def lines =
-		new ManagedSequence[String] {
-			type Handle = Reader
-			val resource = reader
-			def iterator(v : Reader) = StreamHelp.lines(v)
-		}
+	def lines = reader.lines
 
 	/** Views the file as a sequence of lines. */
-	def lines(charset : String) =
-		new ManagedSequence[String] {
-			type Handle = Reader
-			val resource = reader(charset)
-			def iterator(v : Reader) = StreamHelp.lines(v)
-		}
+	def lines(charset : String) = inputStream.lines(charset)
 
 	/** Writes the supplied string to the file, replacing any existing content,
 	 * using the system default character set. */

@@ -39,6 +39,14 @@ abstract class ManagedResource[+A] { self =>
 	 * called automatically when the ManagedResource is used in a
 	 * for-comprehension. */
 	def unsafeClose(v : Handle) : Unit
+	
+	def unsafeCloseQuietly(v : Handle) {
+		try {
+			unsafeClose(v)
+		} catch {
+			case e => e.printStackTrace()
+		}
+	}
 
 	/** Should be implemented to translate a Handle into the desired resource
 	 * type. */
@@ -51,23 +59,13 @@ abstract class ManagedResource[+A] { self =>
 	/** Acquires the resource for the duration of the supplied function. */
 	def acquireFor[B](f : A => B) : B = {
 		val v = unsafeOpen()
-		// This is the same as ensuring, copied here to avoid creating
-		// two more closures.
-		val r =
-			try {
-				f(translate(v))
-			} catch {
-				case e : Throwable =>
-					try {
-						unsafeClose(v)
-					} catch {
-						// Ignore secondary exception
-						case e2 : Exception => ()
-					}
-					throw e
-			}
-		unsafeClose(v)
-		r
+		try {
+			val r = f(translate(v))
+			unsafeClose(v)
+			r
+		} finally {
+			unsafeCloseQuietly(v)
+		}
 	}
 
 	def and[B](that : ManagedResource[B]) : ManagedResource[(A, B)] =
