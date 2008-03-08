@@ -221,7 +221,7 @@ checkRule(typeSpec)(
    
       
   // check reserved words aren't ids
-  checkFailure(id)(ScalaParser.reserved.toList : _*)
+  checkFailure(id)(ScalaScanner.reserved.toList : _*)
   //checkFailure(id(false))(reservedOps.keys.toList : _*)
   
   checkRule(keyword)(
