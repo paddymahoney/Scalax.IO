@@ -47,6 +47,15 @@ abstract class ManagedResource[+A] { self =>
 			case e => e.printStackTrace()
 		}
 	}
+	
+	/** Close ignoring Exception, but not any Throwable. */
+	def unsafeCloseIgnoringException(v : Handle) {
+		try {
+			unsafeClose(v)
+		} catch {
+			case e: Exception => e.printStackTrace()
+		}
+	}
 
 	/** Should be implemented to translate a Handle into the desired resource
 	 * type. */
