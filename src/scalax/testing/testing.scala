@@ -69,6 +69,11 @@ class TestSuite(val name : String) extends TestCase {
 		if(x == y) throw new TestFail(msg+":\n    "+x+"\n == "+y)
 	def assertNe(x : Any, y : Any) =
 		if(x == y) throw new TestFail(x+"\n == "+y)
+	
+	/* XXX: support set-up and tear-down
+	def setUp() { }
+	def tearDown() { }
+	*/
 
 	def run() = {
 		println("Running "+name+"...")
