@@ -69,7 +69,7 @@ object InputStreamResource {
 			def unsafeOpen() = new FileInputStream(file)
 		}
 
-	def file(path : String) = file(new File(path))
+	def file(path : String): InputStreamResource[FileInputStream] = file(new File(path))
 
 	private def url(url : java.net.URL) =
 		new InputStreamResource[InputStream] {
