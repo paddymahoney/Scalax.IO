@@ -12,6 +12,7 @@
 
 package scalax.io
 import java.io._
+import java.net.URL
 import java.nio.channels._
 import java.nio.charset._
 import java.util.regex._
@@ -67,7 +68,38 @@ object InputStreamResource {
 		new InputStreamResource[FileInputStream] {
 			def unsafeOpen() = new FileInputStream(file)
 		}
-	                                            
+
+	def file(path : String) = file(new File(path))
+
+	private def url(url : java.net.URL) =
+		new InputStreamResource[InputStream] {
+			def unsafeOpen() = {
+				// see org.springframework.core.io.UrlResource
+				val conn = url.openConnection()
+				conn.setUseCaches(false)
+				conn.getInputStream()
+			}
+		}
+	
+	def classpath(path : String): InputStreamResource[InputStream] =
+		classpath(path, Thread.currentThread.getContextClassLoader)
+	
+	def classpath(path : String, classLoader: ClassLoader): InputStreamResource[InputStream] =
+		new InputStreamResource[InputStream] {
+			def unsafeOpen() = {
+				val is = classLoader.getResourceAsStream(path)
+				if (is eq null) throw new FileNotFoundException
+				is
+			}
+		}
+	
+	private val CLASSPATH_URL_PREFIX = "classpath:"
+	
+	def url(u : String): InputStreamResource[InputStream] = {
+		if (u startsWith CLASSPATH_URL_PREFIX) classpath(u.substring(CLASSPATH_URL_PREFIX.length))
+		else url(new URL(u))
+	}
+		
 }
 
 abstract class ReaderResource[R <: Reader] extends CloseableResource[R] {
@@ -141,6 +173,21 @@ abstract class WriterResource[W <: Writer] extends CloseableResource[W] {
 			def unsafeOpen() =
 				new PrintWriter(WriterResource.this.unsafeOpen())
 		}
+	
+	def writeString(string : String) {
+		for (w <- this) w.write(string)
+	}
+	
+	def writeLines(lines : Seq[String]) {
+		for (w <- buffered; line <- lines) {
+			w.write(line)
+			w.write(FileHelp.lineSeparator)
+		}
+	}
+	
+	def writeLine(line : String) {
+		writeLines(line :: Nil)
+	}
 }
 
 // vim: set ts=4 sw=4 noet:

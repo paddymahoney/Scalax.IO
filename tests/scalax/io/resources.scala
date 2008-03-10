@@ -24,10 +24,33 @@ object ReaderResourceTests extends TestSuite("StringResourceTests") {
 }
 
 object InputStreamResourceTests extends TestSuite("InputStreamResource") {
+	implicit def toFileExtras(file : File) = new FileExtras(file)
+
+	def testTmpDir = FileHelp.tmpDir / "InputStreamResourceTests"
+
 	"Slurp" is {
 		val array = Array(1.toByte, 2.toByte, 3.toByte, 4.toByte, 5.toByte)
 		val got = InputStreamResource.bytes(array).slurp()
 		assert(got deepEquals array)
+	}
+	
+	"File URL" is {
+		try {
+			testTmpDir.mkdirs
+			val f = testTmpDir / "File"
+			f.writer.writeLines("a" :: "b" :: Nil)
+			// open frm file URL
+			val g = InputStreamResource.url("file://" + f.getPath)
+			assertEq("a" :: "b" :: Nil, g.lines.toList)
+		} finally {
+			tearDown()
+		}
+	}
+	
+	// XXX: ClassPath URL test
+	
+	def tearDown() {
+		testTmpDir.deleteRecursively()
 	}
 }
 
