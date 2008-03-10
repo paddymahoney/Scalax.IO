@@ -164,8 +164,17 @@ object ReaderResource {
 abstract class OutputStreamResource[O <: OutputStream] extends CloseableResource[O] {
 	def buffered : OutputStreamResource[BufferedOutputStream] =
 		new OutputStreamResource[BufferedOutputStream] {
-			def unsafeOpen() =
-				new BufferedOutputStream(OutputStreamResource.this.unsafeOpen())
+			def unsafeOpen() = {
+				val os = OutputStreamResource.this.unsafeOpen()
+				try {
+					new BufferedOutputStream(os)
+				} catch {
+					case e =>
+						OutputStreamResource.this.unsafeCloseQuietly(os)
+						throw e
+				}
+			}
+			
 			override def buffered = this
 		}
 	
@@ -214,15 +223,34 @@ object OutputStreamResource {
 abstract class WriterResource[W <: Writer] extends CloseableResource[W] {
 	def buffered : WriterResource[BufferedWriter] =
 		new WriterResource[BufferedWriter] {
-			def unsafeOpen() =
-				new BufferedWriter(WriterResource.this.unsafeOpen())
+			def unsafeOpen() = {
+				val writer = WriterResource.this.unsafeOpen()
+				try {
+					new BufferedWriter(writer)
+				} catch {
+					case e =>
+						WriterResource.this.unsafeCloseQuietly(writer)
+						throw e
+				}
+			}
+			
 			override def buffered = this
 		}
 	
 	def printWriter =
 		new WriterResource[PrintWriter] {
-			def unsafeOpen() =
-				new PrintWriter(WriterResource.this.unsafeOpen())
+			def unsafeOpen() = {
+				val writer = WriterResource.this.unsafeOpen()
+				try {
+					new PrintWriter(writer)
+				} catch {
+					case e =>
+						WriterResource.this.unsafeCloseQuietly(writer)
+						throw e
+				}
+			}
+			
+			override def printWriter = this
 		}
 	
 	def writeString(string : String) {
