@@ -134,4 +134,6 @@ object FileHelp {
 			if(!src.delete()) throw new IOException("Delete after copy failed: "+src)
 		}
 	}
+	
+	def tmpDir = new File(System.getProperty("java.io.tmpdir"))
 }

@@ -10,16 +10,15 @@
 //
 // -----------------------------------------------------------------------------
 
+import scalax.data._
+import scalax.io._
 import scalax.testing._
+import java.io._
 
-object ScalaxTests extends TestSuite("Scalax") {
-	include(CommandLineTests)
-	include(CsvTests)
-	
-	// scalax.io
-	include(StreamHelpTests)
-	include(ResourcesTests)
-	include(FileHelpTests)
-	
-	include(ConcurrentLinkedListTests)
+object FileHelpTests extends TestSuite("FileHelp") {
+    "TmpDir" is {
+        assert(FileHelp.tmpDir.exists)
+    }
 }
+
+// vim: set ts=4 sw=4 et:
