@@ -133,9 +133,9 @@ abstract class ReaderResource[R <: Reader] extends CloseableResource[R] {
 	
 	def lines =
 		new ManagedSequence[String] {
-			type Handle = Reader
-			val resource = ReaderResource.this
-			def iterator(v : Reader) = StreamHelp.lines(v)
+			type Handle = BufferedReader
+			val resource = ReaderResource.this.buffered
+			override def iterator(v : BufferedReader) = StreamHelp.lines(v)
 		}
 	
 	def readLines(): Seq[String] = lines.toList
