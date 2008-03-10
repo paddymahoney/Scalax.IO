@@ -136,4 +136,6 @@ object FileHelp {
 	}
 	
 	def tmpDir = new File(System.getProperty("java.io.tmpdir"))
+	
+	// XXX: add implicit def toFileExtras(file : File) = new FileExtras(file)
 }
