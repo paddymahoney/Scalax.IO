@@ -35,21 +35,20 @@ object InputStreamResourceTests extends TestSuite("InputStreamResource") {
 	}
 	
 	"File URL" is {
-		try {
-			testTmpDir.mkdirs
-			val f = testTmpDir / "File"
-			f.writer.writeLines("a" :: "b" :: Nil)
-			// open frm file URL
-			val g = InputStreamResource.url("file://" + f.getPath)
-			assertEq("a" :: "b" :: Nil, g.lines.toList)
-		} finally {
-			tearDown()
-		}
+		val f = testTmpDir / "File"
+		f.writer.writeLines("a" :: "b" :: Nil)
+		// open frm file URL
+		val g = InputStreamResource.url("file://" + f.getPath)
+		assertEq("a" :: "b" :: Nil, g.lines.toList)
 	}
 	
 	// XXX: ClassPath URL test
 	
-	def tearDown() {
+	override def setUp() {
+		testTmpDir.mkdirs()
+	}
+	
+	override def tearDown() {
 		testTmpDir.deleteRecursively()
 	}
 }
