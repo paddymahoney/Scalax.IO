@@ -127,7 +127,17 @@ abstract class ReaderResource[R <: Reader] extends CloseableResource[R] {
 	
 	def buffered : ReaderResource[BufferedReader] =
 		new ReaderResource[BufferedReader] {
-			def unsafeOpen() = new BufferedReader(ReaderResource.this.unsafeOpen())
+			def unsafeOpen() = {
+				val reader = ReaderResource.this.unsafeOpen()
+				try {
+					new BufferedReader(reader)
+				} catch {
+					case e =>
+						ReaderResource.this.unsafeCloseQuietly(reader)
+						throw e
+				}
+			}
+			
 			override def buffered = this
 		}
 	
