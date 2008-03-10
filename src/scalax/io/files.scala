@@ -34,20 +34,14 @@ class FileExtras(file : File) {
 	/** Obtains a Writer using the supplied charset. */
 	def writer(charset : String) = outputStream.writer(charset)
 	
-	def bufferedWriter = writer.buffered
-	
 	def printWriter = bufferedWriter.printWriter
 
 	/** Obtains an InputStream. */
 	def inputStream = InputStreamResource.file(file)
 	
-	def bufferedInputStream = inputStream.buffered
-
 	/** Obtains a OutputStream. */
 	def outputStream = OutputStreamResource.file(file)
 	
-	def bufferedOutputStream = outputStream.buffered
-
 	/** Obtains a FileChannel. */
 	def channel =
 		new ManagedResource[FileChannel] {
