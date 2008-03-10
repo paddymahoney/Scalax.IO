@@ -34,13 +34,15 @@ class FileExtras(file : File) {
 	/** Obtains a Writer using the supplied charset. */
 	def writer(charset : String) = outputStream.writer(charset)
 	
-	def printWriter = bufferedWriter.printWriter
+	def printWriter = writer.buffered.printWriter
 
 	/** Obtains an InputStream. */
 	def inputStream = InputStreamResource.file(file)
 	
 	/** Obtains a OutputStream. */
 	def outputStream = OutputStreamResource.file(file)
+	
+	def appendOutputStream = OutputStreamResource.fileAppend(file)
 	
 	/** Obtains a FileChannel. */
 	def channel =
@@ -69,6 +71,10 @@ class FileExtras(file : File) {
 
 	/** Views the file as a sequence of lines. */
 	def lines(charset : String) = inputStream.lines(charset)
+	
+	def readLines() = reader.readLines()
+	
+	def readLine() = reader.readLine()
 
 	/** Writes the supplied string to the file, replacing any existing content,
 	 * using the system default character set. */

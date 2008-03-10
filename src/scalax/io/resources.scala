@@ -210,9 +210,24 @@ abstract class OutputStreamResource[O <: OutputStream] extends CloseableResource
 			}
 		}
 	}
+	
+	def writeLine(line : String) = writer.writeLine(line)
+	
+	def writeLines(lines : Seq[String]) = writer.writeLines(lines)
+	
+	def writeString(string : String) = writer.writeString(string)
 }
 
 object OutputStreamResource {
+	def fileAppend(file : File, append : Boolean) =
+		new OutputStreamResource[FileOutputStream] {
+			def unsafeOpen() =
+				new FileOutputStream(file, true)
+		}
+	
+	def fileAppend(file : File) : OutputStreamResource[FileOutputStream] =
+		fileAppend(file, true)
+		
 	def file(file : File) =
 		new OutputStreamResource[FileOutputStream] {
 			def unsafeOpen() =
@@ -237,7 +252,7 @@ abstract class WriterResource[W <: Writer] extends CloseableResource[W] {
 			override def buffered = this
 		}
 	
-	def printWriter =
+	def printWriter: WriterResource[PrintWriter] =
 		new WriterResource[PrintWriter] {
 			def unsafeOpen() = {
 				val writer = WriterResource.this.unsafeOpen()
@@ -250,13 +265,14 @@ abstract class WriterResource[W <: Writer] extends CloseableResource[W] {
 				}
 			}
 			
-			override def printWriter = this
+			override def printWriter: WriterResource[PrintWriter] = this
 		}
 	
 	def writeString(string : String) {
 		for (w <- this) w.write(string)
 	}
 	
+	/** Write strings adding line separator after each line */
 	def writeLines(lines : Seq[String]) {
 		for (w <- buffered; line <- lines) {
 			w.write(line)
@@ -264,6 +280,7 @@ abstract class WriterResource[W <: Writer] extends CloseableResource[W] {
 		}
 	}
 	
+	/** Write string followed by line separator */
 	def writeLine(line : String) {
 		writeLines(line :: Nil)
 	}

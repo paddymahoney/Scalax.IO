@@ -15,7 +15,21 @@ import scalax.io._
 import scalax.testing._
 import java.io._
 
-object ReaderResourceTests extends TestSuite("StringResourceTests") {
+abstract class AbstractResourcesTests(name : String) extends TestSuite(name) {
+	implicit def toFileExtras(file : File) = new FileExtras(file)
+
+	def testTmpDir = FileHelp.tmpDir / name
+	
+	override def setUp() {
+		testTmpDir.mkdirs()
+	}
+	
+	override def tearDown() {
+		testTmpDir.deleteRecursively()
+	}
+}
+
+object ReaderResourceTests extends AbstractResourcesTests("StringResourceTests") {
 	"Slurp" is {
 		val string = "abc123"
 		val got = ReaderResource.string(string).slurp()
@@ -23,10 +37,7 @@ object ReaderResourceTests extends TestSuite("StringResourceTests") {
 	}
 }
 
-object InputStreamResourceTests extends TestSuite("InputStreamResource") {
-	implicit def toFileExtras(file : File) = new FileExtras(file)
-
-	def testTmpDir = FileHelp.tmpDir / "InputStreamResourceTests"
+object InputStreamResourceTests extends AbstractResourcesTests("InputStreamResource") {
 
 	"Slurp" is {
 		val array = Array(1.toByte, 2.toByte, 3.toByte, 4.toByte, 5.toByte)
@@ -43,19 +54,22 @@ object InputStreamResourceTests extends TestSuite("InputStreamResource") {
 	}
 	
 	// XXX: ClassPath URL test
-	
-	override def setUp() {
-		testTmpDir.mkdirs()
-	}
-	
-	override def tearDown() {
-		testTmpDir.deleteRecursively()
+}
+
+object OutputStreamResourceTests extends AbstractResourcesTests("OutputStreamResourceTests") {
+	"File Append" is {
+		val f = testTmpDir / "f"
+		f.appendOutputStream.writeLine("a")
+		f.appendOutputStream.writeLine("b")
+		
+		assertEq(List("a", "b"), f.readLines())
 	}
 }
 
 object ResourcesTests extends TestSuite("Resources") {
 	include(ReaderResourceTests)
 	include(InputStreamResourceTests)
+	include(OutputStreamResourceTests)
 }
 
 // vim: set ts=4 sw=4 noet:
