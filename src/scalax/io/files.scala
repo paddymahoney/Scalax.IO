@@ -137,5 +137,7 @@ object FileHelp {
 	
 	def tmpDir = new File(System.getProperty("java.io.tmpdir"))
 	
+	val lineSeparator = System.getProperty("line.separator", "\n")
+	
 	// XXX: add implicit def toFileExtras(file : File) = new FileExtras(file)
 }
