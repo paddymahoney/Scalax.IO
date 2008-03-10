@@ -36,10 +36,10 @@ object InputStreamResourceTests extends TestSuite("InputStreamResource") {
 	
 	"File URL" is {
 		val f = testTmpDir / "File"
-		f.writer.writeLines("a" :: "b" :: Nil)
+		f.writer.writeLines(List("a", "b"))
 		// open frm file URL
 		val g = InputStreamResource.url("file://" + f.getPath)
-		assertEq("a" :: "b" :: Nil, g.lines.toList)
+		assertEq(List("a", "b"), g.readLines())
 	}
 	
 	// XXX: ClassPath URL test

@@ -69,6 +69,10 @@ abstract class InputStreamResource[I <: InputStream] extends CloseableResource[I
 	def lines = reader.lines
 	
 	def lines(charset : String) = reader(charset).lines
+	
+	def readLines() = reader.readLines()
+	
+	def readLine() = reader.readLine()
 }
 
 object InputStreamResource {
@@ -133,6 +137,11 @@ abstract class ReaderResource[R <: Reader] extends CloseableResource[R] {
 			val resource = ReaderResource.this
 			def iterator(v : Reader) = StreamHelp.lines(v)
 		}
+	
+	def readLines(): Seq[String] = lines.toList
+	
+	/** First line or <code>""</code> if file is empty */
+	def readLine() = lines.headOption.getOrElse("")
 }
 
 object ReaderResource {
