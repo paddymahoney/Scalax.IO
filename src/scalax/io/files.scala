@@ -78,11 +78,17 @@ class FileExtras(file : File) {
 
 	/** Writes the supplied string to the file, replacing any existing content,
 	 * using the system default character set. */
-	def write(s : String) = for(w <- writer) w.write(s)
+	def write(s : String) = writeString(s)
 
 	/** Writes the supplied string to the file, replacing any existing content,
 	 * using the supplied character set. */
-	def write(s : String, charset : String) = for(w <- writer(charset)) w.write(s)
+	def write(s : String, charset : String) = writer(charset).writeString(s)
+	
+	def writeString(s : String) = writer.writeString(s)
+	
+	def writeLine(line : String) = writer.writeLine(line)
+	
+	def writeLines(lines : Seq[String]) = writer.writeLines(lines)
 
 	/** Copies the file. */
 	def copyTo(dest : File) = FileHelp.copy(file, dest)

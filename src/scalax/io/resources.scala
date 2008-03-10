@@ -73,6 +73,11 @@ abstract class InputStreamResource[I <: InputStream] extends CloseableResource[I
 	def readLines() = reader.readLines()
 	
 	def readLine() = reader.readLine()
+	
+	def pumpTo[O <: OutputStream](osr : OutputStreamResource[O]) {
+		// Note InputStream should be opened before OutputStream
+		for (is <- this; os <- osr) StreamHelp.pump(is, os)
+	}
 }
 
 object InputStreamResource {
@@ -152,6 +157,11 @@ abstract class ReaderResource[R <: Reader] extends CloseableResource[R] {
 	
 	/** First line or <code>""</code> if file is empty */
 	def readLine() = lines.headOption.getOrElse("")
+	
+	def pumpTo[W <: Writer](wr : WriterResource[W]) {
+		// Note Reader should be opened before Writer
+		for (r <- this; w <- wr) StreamHelp.pump(r, w)
+	}
 }
 
 object ReaderResource {
@@ -216,6 +226,10 @@ abstract class OutputStreamResource[O <: OutputStream] extends CloseableResource
 	def writeLines(lines : Seq[String]) = writer.writeLines(lines)
 	
 	def writeString(string : String) = writer.writeString(string)
+	
+	def pumpFrom[I <: InputStream](isr : InputStreamResource[I]) {
+		isr pumpTo this
+	}
 }
 
 object OutputStreamResource {
@@ -283,6 +297,10 @@ abstract class WriterResource[W <: Writer] extends CloseableResource[W] {
 	/** Write string followed by line separator */
 	def writeLine(line : String) {
 		writeLines(line :: Nil)
+	}
+	
+	def pumpFrom[R <: Reader](rr : ReaderResource[R]) {
+		rr pumpTo this
 	}
 }
 

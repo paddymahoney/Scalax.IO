@@ -35,6 +35,31 @@ object ReaderResourceTests extends AbstractResourcesTests("StringResourceTests")
 		val got = ReaderResource.string(string).slurp()
 		assertEq(string, got)
 	}
+	
+	"PumpTo" is {
+		val f1 = testTmpDir / "f1"
+		val f2 = testTmpDir / "f2"
+		
+		f1.writeLines(List("a", "b"))
+		
+		f1.reader.pumpTo(f2.writer)
+		
+		assertEq(List("a", "b"), f2.readLines())
+	}
+	
+	"PumpTo opens Reader first" is {
+		val f1 = testTmpDir / "f1"
+		val f2 = testTmpDir / "f2"
+		
+		try {
+			f1.reader.pumpTo(f2.writer)
+			fail()
+		} catch {
+			case e: IOException => // expecting
+		}
+		
+		deny(f2.exists)
+	}
 }
 
 object InputStreamResourceTests extends AbstractResourcesTests("InputStreamResource") {
