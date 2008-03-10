@@ -36,8 +36,16 @@ abstract class InputStreamResource[I <: InputStream] extends CloseableResource[I
 		new ReaderResource[Reader] {
 			// XXX: should be UTF-8 by default instead of OS default
 			// practically, here in Russia I never used default charset
-			def unsafeOpen() =
-				new InputStreamReader(InputStreamResource.this.unsafeOpen())
+			def unsafeOpen() = {
+				val is = InputStreamResource.this.unsafeOpen()
+				try {
+					new InputStreamReader(is)
+				} catch {
+					case e =>
+						InputStreamResource.this.unsafeCloseQuietly(is)
+						throw e
+				}
+			}
 		}
 	
 	/** Obtains a Reader using the supplied charset. */
@@ -45,8 +53,16 @@ abstract class InputStreamResource[I <: InputStream] extends CloseableResource[I
 		// Do this lookup before opening the file, since it might fail.
 		val cs = Charset.forName(charset)
 		new ReaderResource[Reader] {
-			def unsafeOpen() =
-				new InputStreamReader(InputStreamResource.this.unsafeOpen(), cs)
+			def unsafeOpen() = {
+				val is = InputStreamResource.this.unsafeOpen()
+				try {
+					new InputStreamReader(is, cs)
+				} catch {
+					case e =>
+						InputStreamResource.this.unsafeCloseQuietly(is)
+						throw e
+				}
+			}
 		}
 	}
 	
@@ -138,16 +154,32 @@ abstract class OutputStreamResource[O <: OutputStream] extends CloseableResource
 	/** Obtains a Writer using the system default charset. */
 	def writer =
 		new WriterResource[Writer] {
-			def unsafeOpen() =
-				new OutputStreamWriter(OutputStreamResource.this.unsafeOpen())
+			def unsafeOpen() = {
+				val os = OutputStreamResource.this.unsafeOpen()
+				try {
+					new OutputStreamWriter(os)
+				} catch {
+					case e =>
+						OutputStreamResource.this.unsafeCloseQuietly(os)
+						throw e
+				}
+			}
 		}
 	
 	/** Obtains a Writer using the supplied charset. */
 	def writer(charset : String) = {
 		val cs = Charset.forName(charset)
 		new WriterResource[Writer] {
-			def unsafeOpen() =
-				new OutputStreamWriter(OutputStreamResource.this.unsafeOpen(), cs)
+			def unsafeOpen() = {
+				val os = OutputStreamResource.this.unsafeOpen()
+				try {
+					new OutputStreamWriter(os, cs)
+				} catch {
+					case e =>
+						OutputStreamResource.this.unsafeCloseQuietly(os)
+						throw e
+				}
+			}
 		}
 	}
 }
