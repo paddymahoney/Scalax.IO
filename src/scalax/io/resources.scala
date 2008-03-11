@@ -12,6 +12,7 @@
 
 package scalax.io
 import java.io._
+import java.util.zip._
 import java.net.URL
 import java.nio.channels._
 import java.nio.charset._
@@ -120,11 +121,34 @@ object InputStreamResource {
 	
 	private val CLASSPATH_URL_PREFIX = "classpath:"
 	
+	private val GZIP_URL_PREFIXES = List("gzip:", "gunzip:")
+	
 	def url(u : String): InputStreamResource[InputStream] = {
 		if (u startsWith CLASSPATH_URL_PREFIX) classpath(u.substring(CLASSPATH_URL_PREFIX.length))
-		else url(new URL(u))
+		else {
+			val gzippedO = GZIP_URL_PREFIXES.map(prefix => (prefix, u startsWith prefix))
+					.find(_._2)
+					.map(_._1)
+			if (gzippedO.isDefined) {
+				// XXX: avoid cast
+				gunzip(url(u.substring(gzippedO.get.length))).asInstanceOf[InputStreamResource[InputStream]]
+			} else url(new URL(u))
+		}
 	}
-		
+	
+	def gunzip[I <: InputStream](iss : InputStreamResource[I]) =
+		new InputStreamResource[GZIPInputStream] {
+			override def unsafeOpen() = {
+				val is = iss.unsafeOpen()
+				try {
+					new GZIPInputStream(is)
+				} catch {
+					case e =>
+						iss.unsafeClose(is)
+						throw e
+				}
+			}
+		}
 }
 
 abstract class ReaderResource[R <: Reader] extends CloseableResource[R] {
