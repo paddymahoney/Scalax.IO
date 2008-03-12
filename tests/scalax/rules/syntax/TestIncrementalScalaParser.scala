@@ -10,7 +10,7 @@
 //
 // -----------------------------------------------------------------------------
 
-package scalax.rules.syntax.test;
+package scalax.rules.syntax.test
 
 object TestIncrementalScalaParser extends IncrementalScalaParser with Application {
   
@@ -59,4 +59,3 @@ object TestIncrementalScalaParser extends IncrementalScalaParser with Applicatio
    //printLines()
    printCompilationUnit()
 } 
-

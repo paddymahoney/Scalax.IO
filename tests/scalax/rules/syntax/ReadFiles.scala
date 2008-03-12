@@ -16,15 +16,17 @@ import java.io.{BufferedReader, File, FileReader, Reader}
 
 
 object ReadFiles extends SimpleScalaParser with Application {
+  //DefaultMemoisable.debug = true
+  
   //process(new File("src/scalax/rules"))
   process(new File("../scala-trunk/src/compiler"))
-  //process(new File("tests/scalax/rules/scala/TestIncrementalScalaParser.scala"))
-  //process(new File("../scala-trunk/src/compiler/scala/tools/nsc/symtab/Types.scala"))
   
   def process(file : File) {
     if (file.isDirectory) file.listFiles().foreach(process)
     else if (file.getName.endsWith(".scala")) read(file)
   }
+  
+  lazy val tokens = item *
   
   def read(file : File) {
     print(file + "...")
@@ -33,12 +35,11 @@ object ReadFiles extends SimpleScalaParser with Application {
     var line = ""
     while ({ line = reader.readLine(); line } != null) buffer append line append "\n"
     reader.close();
+    
     val result = compilationUnit(input(buffer.toString))
     result match {
-      //case Success(value, rest) => println(value + "\nRemaining = \"" + rest)//.mkString("") + "\"")
-      case Success(rest : Iterable[Char], value) if rest.mkString("") != "" => error(value + "\nRemaining = \"" + rest.mkString("") + "\"")
       case Success(rest, value) => println("Success!")
-      case _ => error("Failure!")
+      case _ => throw new Exception("Failure!")
     }
   }
 }

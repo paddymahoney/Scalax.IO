@@ -35,7 +35,7 @@ trait Parser[A] extends Rules {
  * Rules that operate on a sequence of characters.
  */
 trait Scanner extends Parser[Char] {
-  implicit def readString(string : String) : Rule[String] = readSeq(string) as string
+  implicit def readString(string : String) : Rule[String] = readSeq(string)
 
   def toString(seq : Seq[Any]) = seq.mkString("")
       

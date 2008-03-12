@@ -35,7 +35,7 @@ case object EmptyStatement extends Statement
 
 trait Expression extends Statement
 
-sealed abstract class Literal extends Expression
+trait Literal extends Expression
 
 case object Null extends Literal
 case object True extends Literal

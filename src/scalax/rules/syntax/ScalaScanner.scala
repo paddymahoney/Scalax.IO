@@ -19,7 +19,6 @@ package scalax.rules.syntax
  * based on Scala Language Specification.
 */
 object ScalaScanner {
-  
   val reserved = Set(
       "abstract", "case", "catch", "class", "def", "do", "else", "extends", "false", "final",
       "finally", "for", "forSome", "if", "implicit", "import", "lazy", "match", "new", "null", "object",
@@ -44,7 +43,21 @@ object ScalaScanner {
   def canEndStatement(id : String) = endStatements.contains(id)
 }
 
+class Position {
+  
+}
 
+abstract class Token
+abstract class NameToken extends Token {
+  def name : String
+}
+case class ReservedId(name : String) extends NameToken
+case class QuoteId(name : String) extends NameToken
+case class PlainId(name : String) extends NameToken
+case class Delimiter(delim : Char) extends Token
+case class LiteralToken[+T](value : T) extends Token with Literal
+case class Comment(text : String) extends Token
+case object NewLineToken extends Token
 
 import ScalaScanner._
 import Character._
@@ -55,73 +68,73 @@ import Character._
  *
  * based on Scala Language Specification.
 */
-trait ScalaScanner extends Scanner {
-  /** Treat a symbol as a rule that matches the corresponding keyword */
-  implicit def symbolToKeyword(symbol : Symbol) : Rule[String] = reservedId filter (_ == symbol.name)
-  implicit def symbolToKeywordSeq(symbol : Symbol) = seqRule(symbolToKeyword(symbol))
-     
+trait ScalaScanner extends Scanner with MemoisableRules {
+  
   /** rule that sets multiple statements status and returns the previous value */
   def multiple(allow : Boolean) : Rule[Boolean]
-  val multipleStatementsAllowed : Rule[Any]
-    
+  def multipleStatementsAllowed : Rule[Any]
   def lastTokenCanEndStatement(value : Boolean) : Rule[Any]
-  val lastTokenCanEndStatement : Rule[Any]
+  def lastTokenCanEndStatement : Rule[Any]
+  
+  implicit def symbolToId(symbol : Symbol) : Rule[Token] = otherToken ?? { case ReservedId(symbol.name) => }
+
+  lazy val token : Rule[Token] = nl | otherToken as "token"
+  lazy val otherToken : Rule[Token] = skip -~ (literal | delimiter | id) as "otherToken"
+  lazy val skip = space | comment | newline *
+  
+  lazy val nl : Rule[Token] = for {
+    _ <- multipleStatementsAllowed;
+    _ <- lastTokenCanEndStatement;
+    _ <- space | comment *;
+    _ <- newline;
+    _ <- startStatement &
+  } yield NewLineToken
+
+  lazy val startStatement = 'case ~ ('class | 'object) | otherToken ?? {
+    case Delimiter('(') | Delimiter('{') =>
+    case _ : Literal =>
+    case QuoteId(_) =>
+    case PlainId(_) =>
+    case ReservedId(name) if canStartStatement(name) =>
+  }
     
-  def singleStatement[T](rule : Rule[T]) = for (s <- multiple(false); t <- rule; _ <- multiple(s)) yield t
-  def multipleStatements[T](rule : Rule[T]) = for (s <- multiple(true); t <- rule; _ <- multiple(s)) yield t
-            
-  val position : Rule[() => Int]
-  def element[T](rule : Rule[T]) : Rule[Element[T]] = !nl -~ skip -~ position ~ rule ~ position ~- (space*) ^~~^ ScalaElement[T]
+  lazy val delimiter : Rule[Delimiter] = 
+      choice("({[;,.") ~- lastTokenCanEndStatement(false) ^^ Delimiter |
+      choice(")}]") ~- lastTokenCanEndStatement(true) ^^ Delimiter
+
+  lazy val id =
+      quoteId ~- lastTokenCanEndStatement(true) ^^ QuoteId |
+      reservedId >> { id => success(id) ~- lastTokenCanEndStatement(endStatements(id.name)) } |
+      plainId ~- lastTokenCanEndStatement(true) ^^ PlainId
     
-  def token[T](key : String, rule : Rule[T], f : T => Boolean) : Rule[T] = !nl -~ skip -~ rule ~- (space*) >> tokenCanEndStatement(f) as key
-  def tokenCanEndStatement[T](f : T => Boolean)(t : T) = lastTokenCanEndStatement(f(t)) -~ success(t)
-  def endToken[T](key : String, rule : Rule[T]) : Rule[T] = token(key, rule, { t : T => true })
+  lazy val quoteId = '`' -~ (printableChar +~- '`') ^^ toString
+  lazy val plainId = (letter ~++ idRest | (opChar+)) ^^ toString as "plainId"
+  lazy val reservedId = (plainId filter isReserved) ^^ ReservedId
+        
+  // note multi-line comments can nest
+  lazy val multiLineComment : Rule[String] = ("/*" -~ (multiLineComment | anyChar) *~- "*/") ^^ toString
+  lazy val singleLineComment : Rule[String] = "//" -~ (item - newline *) ^^ toString
+  lazy val comment = (singleLineComment | multiLineComment) ^^ Comment as "comment"
+    
+  
+  lazy val literal : Rule[LiteralToken[Any]] = 
+      (plainId ^^? {
+        case "null" => LiteralToken(null)
+        case "true" => LiteralToken(true)
+        case "false" => LiteralToken(false)
+      } |
+      characterLiteral |
+      stringLiteral |
+      symbolLiteral |
+      floatLiteral |
+      integerLiteral) ~- lastTokenCanEndStatement(true) as "literal"
+  
+  lazy val charElement = charEscapeSeq | printableChar
+  lazy val characterLiteral = '\'' -~ (charElement - '\'') ~- '\'' ^^ LiteralToken[Char]
+  lazy val stringLiteral = ("\"\"\"" -~ anyChar *~- "\"\"\"" | '\"' -~ charElement *~- '\"') ^^ toString ^^ LiteralToken[String]
+  lazy val symbolLiteral = '\'' -~ plainId ^^ Symbol ^^ LiteralToken[Symbol]
     
   lazy val space = choice(" \t")
-  lazy val skip = space | comment | newline *
-  lazy val startStatement = skip ~- (
-      choice("({") 
-      | literal 
-      | id 
-      | reservedId.filter(canStartStatement) 
-      | 'case ~ ('class | 'object))
-    
-  lazy val nl = (multipleStatementsAllowed 
-      -~ lastTokenCanEndStatement 
-      -~ (space | comment *) 
-      -~ newline 
-      ~- (startStatement &)) as "nl"
-
-  def delim(char : Char) : Rule[Char] = !nl -~ skip -~ char ~- lastTokenCanEndStatement(")]}" contains char)
-      
-  lazy val semi = delim(';') | (nl+) as "semi"
-  lazy val dot = delim('.')
-  lazy val comma = delim(',')
-    
-  def round[T](rule : Rule[T]) = delim('(') -~ singleStatement(rule) ~- delim(')')
-  def square[T](rule : Rule[T]) = delim('[') -~ singleStatement(rule) ~- delim(']')
-  def curly[T](rule : Rule[T]) = delim('{') -~ multipleStatements(rule) ~- delim('}')
-    
-  def idToken(string : String) : Rule[String] = (plainId | reservedId) filter (_ == string)
-    
-  lazy val `_` = idToken("_")
-  lazy val `:` = idToken(":")
-  lazy val `=` = idToken("=")
-  lazy val `=>` = idToken("=>") | idToken("\u21D2")
-  lazy val `<-` = idToken("<-")
-  lazy val `<:` = idToken("<:")
-  lazy val `<%` = idToken("<%")
-  lazy val `>:` = idToken(">:")
-  lazy val `#` = idToken("#")
-  lazy val `@` = idToken("@")
-    
-  lazy val `|` = idToken("|")
-  lazy val `*` = idToken("*")
-    
-  lazy val plus = idToken("+")
-  lazy val minus = idToken("-")
-  lazy val bang = idToken("!")
-  lazy val tilde = idToken("~")
     
   val decimalDigit = ('0' to '9') ^^ (_ - 48L)
   val octalDigit = decimalDigit.filter(_ < 8)
@@ -149,28 +162,14 @@ trait ScalaScanner extends Scanner {
   val opChar = unicode(MATH_SYMBOL) | unicode(OTHER_SYMBOL) | choice("!#%&*+-/:<=>?@\\^|~")
   lazy val idRest : Rule[List[Char]] = ('_' ~++ (opChar+)) ~- !idChar | !idChar -^ Nil | idChar ~++ idRest
     
-  lazy val quoteId = endToken("quoteId", '`' -~ (printableChar +~- '`') ^^ toString)
-  lazy val unquotedId = letter ~++ idRest | (opChar+)
-  lazy val plainId = endToken("plainId", notReserved((unquotedId) ^^ toString))
-  lazy val id = quoteId | plainId
-  lazy val varId = plainId filter { id => id.charAt(0) isLowerCase }
-  lazy val rightOp = plainId filter { id => id.endsWith(":") }
-    
-  val keyword = reserved(letter ~++ idRest ^^ toString) as "keyword"
-  val reservedOp = reserved((opChar+) ^^ toString)
-  lazy val reservedId = token("reservedId", keyword | reservedOp, canEndStatement)
-    
-  def reserved(rule : Rule[String]) = rule filter isReserved
-  def notReserved(rule : Rule[String]) = rule filter isNotReserved
-    
   val nonZero = decimalDigit filter (_ > 0)
   val hexNumeral = "0x" -~ hexDigit ~>* hex
   val octalNumeral = '0' -~ octalDigit ~>* oct
   val decimalNumeral = !'0' -~ decimalDigit ~>* dec | '0' -^ 0L
     
   val integerLiteral = (hexNumeral | octalNumeral | decimalNumeral) ~ (choice("Ll")-?) ~- !idChar >> {
-    case value ~ false => success(IntegerLiteral(value.asInstanceOf[Int]))
-    case value ~ true => success(LongLiteral(value))
+    case value ~ false => success(LiteralToken(value.asInstanceOf[Int]))
+    case value ~ true => success(LiteralToken(value))
   }
     
   val intPart = decimalNumeral ^^ (_ toString) | ""
@@ -180,26 +179,7 @@ trait ScalaScanner extends Scanner {
   val floatLiteral = intPart ~ floatPart ~ exponentPart ~ (letter ~++ idRest ^^ toString ?) >>? {
     case "" ~ ("" | ".") ~ _ ~ _ => failure // have to have at least one digit
     case _ ~ "" ~ "" ~ None => failure // it's an integer
-    case i ~ f ~ e ~ Some("F" | "f") => success(FloatLiteral((i + f + e).toFloat))
-    case i ~ f ~ e ~ (Some("D" | "d") | None)  => success(DoubleLiteral((i + f + e).toDouble))
+    case i ~ f ~ e ~ Some("F" | "f") => success(LiteralToken((i + f + e).toFloat))
+    case i ~ f ~ e ~ (Some("D" | "d") | None)  => success(LiteralToken((i + f + e).toDouble))
   }
-
-  val charElement = charEscapeSeq | printableChar
-  val characterLiteral = '\'' -~ (charElement - '\'') ~- '\'' ^^ CharacterLiteral
-  val stringLiteral = ("\"\"\"" -~ anyChar *~- "\"\"\"" | '\"' -~ charElement *~- '\"') ^^ toString ^^ StringLiteral
-  val symbolLiteral = '\'' -~ unquotedId ^^ toString ^^ Symbol ^^ SymbolLiteral
-    
-  // note multi-line comments can nest
-  lazy val multiLineComment : Rule[String] = ("/*" -~ (multiLineComment | anyChar) *~- "*/") ^^ toString
-  val singleLineComment : Rule[String] = "//" -~ (item - newline *) ^^ toString
-  lazy val comment = singleLineComment | multiLineComment as "comment"
-    
-  lazy val literal : Rule[Literal] = ('null -^ Null
-      | 'true -^ True
-      | 'false -^ False 
-      | endToken("literalToken", (characterLiteral 
-          | stringLiteral 
-          | symbolLiteral
-          | floatLiteral
-          | integerLiteral) as "literal"))
 }

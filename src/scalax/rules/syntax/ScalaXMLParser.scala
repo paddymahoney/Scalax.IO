@@ -21,7 +21,7 @@ import Character._
  * based on Scala Language Specification.
  */
 trait ScalaXMLParser extends ScalaScanner {
-  
+
   def scalaPattern : Rule[Expression]
   def scalaExpr : Rule[Expression]
   
@@ -51,14 +51,16 @@ trait ScalaXMLParser extends ScalaScanner {
   val tagEnd = '>' as "tagEnd"
   val endTag = "</" as "endTag"
   
-  lazy val xmlExpr = endToken("xmlExpr", (xmlElement  | cDataSect | pi +) ^^ NodeList)
+  def debug(message : String) : Rule[Nothing] = token >> { t => s => println(message + " (next token: " + t + ")"); Failure(()) }
+  
+  lazy val xmlExpr = skip -~ (xmlElement  | cDataSect | pi +) ^^ NodeList as "xmlExpr"
   lazy val xmlElement = startElement -~ elementName ~ (attribute*) ~- (xmlS?) >~> xmlElementRest
   def xmlElementRest(name : String, attributes : List[Attribute]) : Rule[XMLElement] = (emptyElement
       | tagEnd -~ (xmlContent  ^^ Some[Expression]) ~- endElement(name)) ^^ XMLElement(name, attributes)
   def endElement(name : String) = (endTag -~ elementName ~- (xmlS?) ~- tagEnd) filter (_ == name)
   lazy val xmlContent : Rule[Expression] = (xmlElement | xmlComment | charData | scalaExpr  | cDataSect | pi | entityRef *) ^^ NodeList
 
-  lazy val xmlPattern = endToken("xmlPattern", startElement -~ elementName ~- (xmlS?) >> xmlPatternRest)
+  lazy val xmlPattern = skip -~ startElement -~ elementName ~- (xmlS?) >> xmlPatternRest as "xmlPattern"
   def xmlPatternRest(name : String) : Rule[XMLPattern] = (emptyElement
       | tagEnd -~ xmlPatternContent ~- endElement(name)) ^^ XMLPattern(name)
   lazy val xmlPatternContent = (xmlPattern | xmlComment | charData | scalaPattern | cDataSect | pi | entityRef *) ^^ NodeList ^^ Some[Expression]

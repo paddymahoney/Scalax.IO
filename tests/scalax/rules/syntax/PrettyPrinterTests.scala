@@ -15,7 +15,7 @@ package scalax.rules.syntax
 import scalax.testing._
 
 object PrettyPrinterTests extends TestSuite("PrettyPrinter") {
-  
+
 val source = """
 package a.b.c
 
@@ -39,5 +39,5 @@ val html = """<br />
   "CompilationUnit" is { 
     assertEq(source, html, prettyPrinter(source))
   }
-  
+
 }
