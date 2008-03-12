@@ -46,8 +46,17 @@ class TestSuite(val name : String) extends TestCase {
 
 	private val tests = new ListBuffer[TestCase]
 	class TestIs(n : String) {
-		def is(code : => Unit) : Unit =
-			tests += new SingleTestCase(n, code)
+		def is(code : => Unit) : Unit = {
+			def fullTest = {
+				try {
+					setUp
+					code
+				} finally {
+					tearDown
+				}
+			}
+			tests += new SingleTestCase(n, fullTest)
+		}
 	}
 
 	implicit def testIs(n : String) = new TestIs(n)
@@ -69,6 +78,9 @@ class TestSuite(val name : String) extends TestCase {
 		if(x == y) throw new TestFail(msg+":\n    "+x+"\n == "+y)
 	def assertNe(x : Any, y : Any) =
 		if(x == y) throw new TestFail(x+"\n == "+y)
+	
+	def setUp() { }
+	def tearDown() { }
 
 	def run() = {
 		println("Running "+name+"...")

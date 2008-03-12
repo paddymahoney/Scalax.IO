@@ -34,20 +34,16 @@ class FileExtras(file : File) {
 	/** Obtains a Writer using the supplied charset. */
 	def writer(charset : String) = outputStream.writer(charset)
 	
-	def bufferedWriter = writer.buffered
-	
-	def printWriter = bufferedWriter.printWriter
+	def printWriter = writer.buffered.printWriter
 
 	/** Obtains an InputStream. */
 	def inputStream = InputStreamResource.file(file)
 	
-	def bufferedInputStream = inputStream.buffered
-
 	/** Obtains a OutputStream. */
 	def outputStream = OutputStreamResource.file(file)
 	
-	def bufferedOutputStream = outputStream.buffered
-
+	def appendOutputStream = OutputStreamResource.fileAppend(file)
+	
 	/** Obtains a FileChannel. */
 	def channel =
 		new ManagedResource[FileChannel] {
@@ -75,14 +71,24 @@ class FileExtras(file : File) {
 
 	/** Views the file as a sequence of lines. */
 	def lines(charset : String) = inputStream.lines(charset)
+	
+	def readLines() = reader.readLines()
+	
+	def readLine() = reader.readLine()
 
 	/** Writes the supplied string to the file, replacing any existing content,
 	 * using the system default character set. */
-	def write(s : String) = for(w <- writer) w.write(s)
+	def write(s : String) = writeString(s)
 
 	/** Writes the supplied string to the file, replacing any existing content,
 	 * using the supplied character set. */
-	def write(s : String, charset : String) = for(w <- writer(charset)) w.write(s)
+	def write(s : String, charset : String) = writer(charset).writeString(s)
+	
+	def writeString(s : String) = writer.writeString(s)
+	
+	def writeLine(line : String) = writer.writeLine(line)
+	
+	def writeLines(lines : Seq[String]) = writer.writeLines(lines)
 
 	/** Copies the file. */
 	def copyTo(dest : File) = FileHelp.copy(file, dest)
@@ -134,4 +140,10 @@ object FileHelp {
 			if(!src.delete()) throw new IOException("Delete after copy failed: "+src)
 		}
 	}
+	
+	def tmpDir = new File(System.getProperty("java.io.tmpdir"))
+	
+	val lineSeparator = System.getProperty("line.separator", "\n")
+	
+	// XXX: add implicit def toFileExtras(file : File) = new FileExtras(file)
 }

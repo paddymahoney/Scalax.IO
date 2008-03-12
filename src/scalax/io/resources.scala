@@ -12,6 +12,7 @@
 
 package scalax.io
 import java.io._
+import java.net.URL
 import java.nio.channels._
 import java.nio.charset._
 import java.util.regex._
@@ -35,8 +36,16 @@ abstract class InputStreamResource[I <: InputStream] extends CloseableResource[I
 		new ReaderResource[Reader] {
 			// XXX: should be UTF-8 by default instead of OS default
 			// practically, here in Russia I never used default charset
-			def unsafeOpen() =
-				new InputStreamReader(InputStreamResource.this.unsafeOpen())
+			def unsafeOpen() = {
+				val is = InputStreamResource.this.unsafeOpen()
+				try {
+					new InputStreamReader(is)
+				} catch {
+					case e =>
+						InputStreamResource.this.unsafeCloseQuietly(is)
+						throw e
+				}
+			}
 		}
 	
 	/** Obtains a Reader using the supplied charset. */
@@ -44,14 +53,31 @@ abstract class InputStreamResource[I <: InputStream] extends CloseableResource[I
 		// Do this lookup before opening the file, since it might fail.
 		val cs = Charset.forName(charset)
 		new ReaderResource[Reader] {
-			def unsafeOpen() =
-				new InputStreamReader(InputStreamResource.this.unsafeOpen(), cs)
+			def unsafeOpen() = {
+				val is = InputStreamResource.this.unsafeOpen()
+				try {
+					new InputStreamReader(is, cs)
+				} catch {
+					case e =>
+						InputStreamResource.this.unsafeCloseQuietly(is)
+						throw e
+				}
+			}
 		}
 	}
 	
 	def lines = reader.lines
 	
 	def lines(charset : String) = reader(charset).lines
+	
+	def readLines() = reader.readLines()
+	
+	def readLine() = reader.readLine()
+	
+	def pumpTo[O <: OutputStream](osr : OutputStreamResource[O]) {
+		// Note InputStream should be opened before OutputStream
+		for (is <- this; os <- osr) StreamHelp.pump(is, os)
+	}
 }
 
 object InputStreamResource {
@@ -67,7 +93,38 @@ object InputStreamResource {
 		new InputStreamResource[FileInputStream] {
 			def unsafeOpen() = new FileInputStream(file)
 		}
-	                                            
+
+	def file(path : String): InputStreamResource[FileInputStream] = file(new File(path))
+
+	private def url(url : java.net.URL) =
+		new InputStreamResource[InputStream] {
+			def unsafeOpen() = {
+				// see org.springframework.core.io.UrlResource
+				val conn = url.openConnection()
+				conn.setUseCaches(false)
+				conn.getInputStream()
+			}
+		}
+	
+	def classpath(path : String): InputStreamResource[InputStream] =
+		classpath(path, Thread.currentThread.getContextClassLoader)
+	
+	def classpath(path : String, classLoader: ClassLoader): InputStreamResource[InputStream] =
+		new InputStreamResource[InputStream] {
+			def unsafeOpen() = {
+				val is = classLoader.getResourceAsStream(path)
+				if (is eq null) throw new FileNotFoundException
+				is
+			}
+		}
+	
+	private val CLASSPATH_URL_PREFIX = "classpath:"
+	
+	def url(u : String): InputStreamResource[InputStream] = {
+		if (u startsWith CLASSPATH_URL_PREFIX) classpath(u.substring(CLASSPATH_URL_PREFIX.length))
+		else url(new URL(u))
+	}
+		
 }
 
 abstract class ReaderResource[R <: Reader] extends CloseableResource[R] {
@@ -75,16 +132,36 @@ abstract class ReaderResource[R <: Reader] extends CloseableResource[R] {
 	
 	def buffered : ReaderResource[BufferedReader] =
 		new ReaderResource[BufferedReader] {
-			def unsafeOpen() = new BufferedReader(ReaderResource.this.unsafeOpen())
+			def unsafeOpen() = {
+				val reader = ReaderResource.this.unsafeOpen()
+				try {
+					new BufferedReader(reader)
+				} catch {
+					case e =>
+						ReaderResource.this.unsafeCloseQuietly(reader)
+						throw e
+				}
+			}
+			
 			override def buffered = this
 		}
 	
 	def lines =
 		new ManagedSequence[String] {
-			type Handle = Reader
-			val resource = ReaderResource.this
-			def iterator(v : Reader) = StreamHelp.lines(v)
+			type Handle = BufferedReader
+			val resource = ReaderResource.this.buffered
+			override def iterator(v : BufferedReader) = StreamHelp.lines(v)
 		}
+	
+	def readLines(): Seq[String] = lines.toList
+	
+	/** First line or <code>""</code> if file is empty */
+	def readLine() = lines.headOption.getOrElse("")
+	
+	def pumpTo[W <: Writer](wr : WriterResource[W]) {
+		// Note Reader should be opened before Writer
+		for (r <- this; w <- wr) StreamHelp.pump(r, w)
+	}
 }
 
 object ReaderResource {
@@ -97,8 +174,17 @@ object ReaderResource {
 abstract class OutputStreamResource[O <: OutputStream] extends CloseableResource[O] {
 	def buffered : OutputStreamResource[BufferedOutputStream] =
 		new OutputStreamResource[BufferedOutputStream] {
-			def unsafeOpen() =
-				new BufferedOutputStream(OutputStreamResource.this.unsafeOpen())
+			def unsafeOpen() = {
+				val os = OutputStreamResource.this.unsafeOpen()
+				try {
+					new BufferedOutputStream(os)
+				} catch {
+					case e =>
+						OutputStreamResource.this.unsafeCloseQuietly(os)
+						throw e
+				}
+			}
+			
 			override def buffered = this
 		}
 	
@@ -106,21 +192,56 @@ abstract class OutputStreamResource[O <: OutputStream] extends CloseableResource
 	/** Obtains a Writer using the system default charset. */
 	def writer =
 		new WriterResource[Writer] {
-			def unsafeOpen() =
-				new OutputStreamWriter(OutputStreamResource.this.unsafeOpen())
+			def unsafeOpen() = {
+				val os = OutputStreamResource.this.unsafeOpen()
+				try {
+					new OutputStreamWriter(os)
+				} catch {
+					case e =>
+						OutputStreamResource.this.unsafeCloseQuietly(os)
+						throw e
+				}
+			}
 		}
 	
 	/** Obtains a Writer using the supplied charset. */
 	def writer(charset : String) = {
 		val cs = Charset.forName(charset)
 		new WriterResource[Writer] {
-			def unsafeOpen() =
-				new OutputStreamWriter(OutputStreamResource.this.unsafeOpen(), cs)
+			def unsafeOpen() = {
+				val os = OutputStreamResource.this.unsafeOpen()
+				try {
+					new OutputStreamWriter(os, cs)
+				} catch {
+					case e =>
+						OutputStreamResource.this.unsafeCloseQuietly(os)
+						throw e
+				}
+			}
 		}
+	}
+	
+	def writeLine(line : String) = writer.writeLine(line)
+	
+	def writeLines(lines : Seq[String]) = writer.writeLines(lines)
+	
+	def writeString(string : String) = writer.writeString(string)
+	
+	def pumpFrom[I <: InputStream](isr : InputStreamResource[I]) {
+		isr pumpTo this
 	}
 }
 
 object OutputStreamResource {
+	def fileAppend(file : File, append : Boolean) =
+		new OutputStreamResource[FileOutputStream] {
+			def unsafeOpen() =
+				new FileOutputStream(file, true)
+		}
+	
+	def fileAppend(file : File) : OutputStreamResource[FileOutputStream] =
+		fileAppend(file, true)
+		
 	def file(file : File) =
 		new OutputStreamResource[FileOutputStream] {
 			def unsafeOpen() =
@@ -131,16 +252,56 @@ object OutputStreamResource {
 abstract class WriterResource[W <: Writer] extends CloseableResource[W] {
 	def buffered : WriterResource[BufferedWriter] =
 		new WriterResource[BufferedWriter] {
-			def unsafeOpen() =
-				new BufferedWriter(WriterResource.this.unsafeOpen())
+			def unsafeOpen() = {
+				val writer = WriterResource.this.unsafeOpen()
+				try {
+					new BufferedWriter(writer)
+				} catch {
+					case e =>
+						WriterResource.this.unsafeCloseQuietly(writer)
+						throw e
+				}
+			}
+			
 			override def buffered = this
 		}
 	
-	def printWriter =
+	def printWriter: WriterResource[PrintWriter] =
 		new WriterResource[PrintWriter] {
-			def unsafeOpen() =
-				new PrintWriter(WriterResource.this.unsafeOpen())
+			def unsafeOpen() = {
+				val writer = WriterResource.this.unsafeOpen()
+				try {
+					new PrintWriter(writer)
+				} catch {
+					case e =>
+						WriterResource.this.unsafeCloseQuietly(writer)
+						throw e
+				}
+			}
+			
+			override def printWriter: WriterResource[PrintWriter] = this
 		}
+	
+	def writeString(string : String) {
+		for (w <- this) w.write(string)
+	}
+	
+	/** Write strings adding line separator after each line */
+	def writeLines(lines : Seq[String]) {
+		for (w <- buffered; line <- lines) {
+			w.write(line)
+			w.write(FileHelp.lineSeparator)
+		}
+	}
+	
+	/** Write string followed by line separator */
+	def writeLine(line : String) {
+		writeLines(line :: Nil)
+	}
+	
+	def pumpFrom[R <: Reader](rr : ReaderResource[R]) {
+		rr pumpTo this
+	}
 }
 
 // vim: set ts=4 sw=4 noet:
