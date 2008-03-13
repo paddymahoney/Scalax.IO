@@ -78,6 +78,19 @@ object InputStreamResourceTests extends AbstractResourcesTests("InputStreamResou
 		assertEq(List("a", "b"), g.readLines())
 	}
 	
+	"Gzip/Gunzip" is {
+		val f = testTmpDir / "1.gz"
+		val g = testTmpDir / "2.gz"
+		
+		f.outputStream.gzip.writeLine("hello")
+		assertEq("hello", InputStreamResource.url("gzip:file:" + f.getPath).readLine())
+		assertEq("hello", f.inputStream.gunzip.readLine())
+		
+		OutputStreamResource.url("gzip:file:" + g.getPath).writeLine("world")
+		assertEq("world", InputStreamResource.url("gzip:file:" + g.getPath).readLine())
+		assertEq("world", g.inputStream.gunzip.readLine())
+	}
+	
 	// XXX: ClassPath URL test
 }
 

@@ -49,6 +49,20 @@ abstract class InputStreamResource[I <: InputStream] extends CloseableResource[I
 			}
 		}
 	
+	def gunzip =
+		new InputStreamResource[GZIPInputStream] {
+			override def unsafeOpen() = {
+				val is = InputStreamResource.this.unsafeOpen()
+				try {
+					new GZIPInputStream(is)
+				} catch {
+					case e =>
+						InputStreamResource.this.unsafeClose(is)
+						throw e
+				}
+			}
+		}
+	
 	/** Obtains a Reader using the supplied charset. */
 	def reader(charset : String) = {
 		// Do this lookup before opening the file, since it might fail.
@@ -131,24 +145,11 @@ object InputStreamResource {
 					.map(_._1)
 			if (gzippedO.isDefined) {
 				// XXX: avoid cast
-				gunzip(url(u.substring(gzippedO.get.length))).asInstanceOf[InputStreamResource[InputStream]]
+				url(u.substring(gzippedO.get.length)).gunzip.asInstanceOf[InputStreamResource[InputStream]]
 			} else url(new URL(u))
 		}
 	}
 	
-	def gunzip[I <: InputStream](iss : InputStreamResource[I]) =
-		new InputStreamResource[GZIPInputStream] {
-			override def unsafeOpen() = {
-				val is = iss.unsafeOpen()
-				try {
-					new GZIPInputStream(is)
-				} catch {
-					case e =>
-						iss.unsafeClose(is)
-						throw e
-				}
-			}
-		}
 }
 
 abstract class ReaderResource[R <: Reader] extends CloseableResource[R] {
@@ -228,6 +229,20 @@ abstract class OutputStreamResource[O <: OutputStream] extends CloseableResource
 			}
 		}
 	
+	def gzip =
+		new OutputStreamResource[GZIPOutputStream] {
+			def unsafeOpen() = {
+				val os = OutputStreamResource.this.unsafeOpen()
+				try {
+					new GZIPOutputStream(os)
+				} catch {
+					case e =>
+						OutputStreamResource.this.unsafeCloseQuietly(os)
+						throw e
+				}
+			}
+		}
+	
 	/** Obtains a Writer using the supplied charset. */
 	def writer(charset : String) = {
 		val cs = Charset.forName(charset)
@@ -271,6 +286,15 @@ object OutputStreamResource {
 			def unsafeOpen() =
 				new FileOutputStream(file)
 		}
+		
+	private val FILE_URL_PREFIX = "file:"
+	private val GZIP_URL_PREFIX = "gzip:"
+	
+	def url(u : String) : OutputStreamResource[OutputStream] = {
+		if (u startsWith FILE_URL_PREFIX) file(new File(u substring FILE_URL_PREFIX.length))
+		else if (u startsWith GZIP_URL_PREFIX) url(u substring GZIP_URL_PREFIX.length).gzip
+		else throw new IllegalArgumentException("unknown url: " + u)
+	}.asInstanceOf[OutputStreamResource[OutputStream]] // XXX: avoid cast
 }
 
 abstract class WriterResource[W <: Writer] extends CloseableResource[W] {
