@@ -13,6 +13,7 @@
 package scalax.rules.syntax.test
 
 object TestScalaParser extends SimpleScalaParser with TestScanner {
+  DefaultMemoisable.debug = true
   
   def remaining(input : Input#State) = input.chars.drop(input.index).mkString("")
 
@@ -23,8 +24,9 @@ object TestScalaParser extends SimpleScalaParser with TestScanner {
     val start = 0
     val length = 0
   }
-  
-  checkRule('this)("this" -> "this")
+
+  def main(args : Array[String]) {
+  //checkRule('this)("this" -> "this")
   
 checkFailure(stableId)("A.bc.this")
 
@@ -33,7 +35,10 @@ checkRule(typeSpec)(
     "A.B" -> TypeDesignator(List(Name("A")), "B"),
     "A.type" -> SingletonType(List(Name("A"))),
     "(A, \nB)" -> TupleType(List(TypeDesignator(Nil, "A"), TypeDesignator(Nil, "B"))),
+
+    // why is this one so slow?
     "(A, )" -> TupleType(List(TypeDesignator(Nil, "A"))),
+
     "A#B[C, D]" -> ParameterizedType(TypeProjection(TypeDesignator(Nil, "A"))("B"))(List(TypeDesignator(Nil, "C"), TypeDesignator(Nil, "D"))),
     "A with B" -> CompoundType(TypeDesignator(Nil, "A"), List(TypeDesignator(Nil, "B")), None),
    "A => B" -> FunctionType(List(ParameterType(false, TypeDesignator(Nil, "A"), false)), TypeDesignator(Nil, "B")),
@@ -198,22 +203,22 @@ checkRule(typeSpec)(
   )
     
   
-  checkRule(unicodeEscape)("\\u0030" -> '0', "\\u21D2" -> '\u21D2')
-  checkRule(octalEscape)("\\061" -> '1')
-  checkRule(anyChar)("\\u0030" -> '0', "\\u21D2" -> '\u21D2')
-  checkRule(opChar)("\\u21D2" -> '\u21D2')
+  checkRule(scanner.unicodeEscape)("\\u0030" -> '0', "\\u21D2" -> '\u21D2')
+  checkRule(scanner.octalEscape)("\\061" -> '1')
+  checkRule(scanner.anyChar)("\\u0030" -> '0', "\\u21D2" -> '\u21D2')
+  checkRule(scanner.opChar)("\\u21D2" -> '\u21D2')
   
-  checkFailure(integerLiteral)("l", "L", "0x")
+  checkFailure(scanner.integerLiteral)("l", "L", "0x")
   
-  checkRuleWithRest(integerLiteral) (
-      "0l" -> LongLiteral(0) -> "",
-      "12 " -> IntegerLiteral(12) -> " ",
-      "012" -> IntegerLiteral(10) -> "",
-      "0x12" -> IntegerLiteral(18) -> "")
+  checkRuleWithRest(scanner.integerLiteral) (
+      "0l" -> LiteralToken(0) -> "",
+      "12 " -> LiteralToken(12) -> " ",
+      "012" -> LiteralToken(10) -> "",
+      "0x12" -> LiteralToken(18) -> "")
       
-  checkFailure(opChar)(".", ";", "(", "[", "}")
+  checkFailure(scanner.opChar)(".", ";", "(", "[", "}")
   
-  checkRule(opChar) (
+  checkRule(scanner.opChar) (
       "+" -> '+',
       "-" -> '-',
       "*" -> '*',
@@ -221,12 +226,12 @@ checkRule(typeSpec)(
    
       
   // check reserved words aren't ids
-  checkFailure(id)(ScalaParser.reserved.toList : _*)
+  checkFailure(id)(ScalaScanner.reserved.toList : _*)
   //checkFailure(id(false))(reservedOps.keys.toList : _*)
   
-  checkRule(keyword)(
-      "abstract" -> "abstract",
-      "_" -> "_")
+  //checkRule(keyword)(
+  //    "abstract" -> "abstract",
+  //    "_" -> "_")
   
   checkRule(id)(
       "`yield`" -> "yield", 
@@ -234,17 +239,17 @@ checkRule(typeSpec)(
       "yield_+" -> "yield_+",
       "`\\u21D2`" -> "\u21D2")
 
-  checkRule(floatLiteral)(
-      "1f" -> FloatLiteral(1), 
-      "1.0F" -> FloatLiteral(1), 
-      "1.e2F" -> FloatLiteral(100),
-      ".12E3f" -> FloatLiteral(.12E3f),
-      "1D" -> DoubleLiteral(1), 
-      "1.0" -> DoubleLiteral(1), 
-      "1e2" -> DoubleLiteral(100),
-      ".12E3D" -> DoubleLiteral(.12E3))
-  
+  checkRule(scanner.floatLiteral)(
+      "1f" -> LiteralToken(1), 
+      "1.0F" -> LiteralToken(1), 
+      "1.e2F" -> LiteralToken(100),
+      ".12E3f" -> LiteralToken(.12E3f),
+      "1D" -> LiteralToken(1), 
+      "1.0" -> LiteralToken(1), 
+      "1e2" -> LiteralToken(100),
+      ".12E3D" -> LiteralToken(.12E3))
+      
   println("ScalaParser tests passed")
 }
-
+}
 

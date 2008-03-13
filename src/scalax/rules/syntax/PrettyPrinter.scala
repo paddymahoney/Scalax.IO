@@ -17,13 +17,13 @@ class PrettyPrinter extends SimpleScalaParser {
   val index = position ^^ (_())
   def at(pos : Int) = index filter (_ == pos)
   
-  val escapeItem : Rule[String] = (newline -^ "<br />\n"
-    | ' ' -^ "&#160;"
-    | '&' -^ "&amp;"
-    | '<' -^ "&lt;"
-    | item ^^ (_ toString))
+  val escapeItem : Rule[String] = (scanner.newline -^ "<br />\n"
+    | scanner.elem(' ') -^ "&#160;"
+    | scanner.elem('&') -^ "&amp;"
+    | scanner.elem('<') -^ "&lt;"
+    | scanner.item ^^ (_ toString))
     
-  def escapeTo(pos : Int) = escapeItem *~- at(pos) ^^ toString
+  def escapeTo(pos : Int) = escapeItem *~- at(pos) ^^ scanner.toString
   
   /** Look for a memoised result.  This is very ugly - try to think of a better way! */
   def recall(key : String) = (
@@ -37,10 +37,10 @@ class PrettyPrinter extends SimpleScalaParser {
   def style(key : String) = span(key)(escape(key))
   
   val prettyPrint = (
-        style("keyword") 
+        style("comment") 
+      | style("keyword") 
       | style("literal")
       | style("attributeValue")
-      | style("comment")
       | style("xmlComment")
       | style("elementName")
       | style("attributeName")
@@ -49,7 +49,8 @@ class PrettyPrinter extends SimpleScalaParser {
           | escape("emptyElement")
           | escape("tagEnd")
           | escape("endTag"))
-      | escapeItem *) ^^ toString
+      | escapeItem *) ^^ scanner.toString
       
   def prettyPrintFor(rule : Rule[Any]) = expect(((rule&) | none) -~ prettyPrint)
+  
 }

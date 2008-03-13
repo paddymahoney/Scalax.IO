@@ -41,6 +41,14 @@ trait RuleFactory {
 
   implicit def seqRule[In, A, X, Err](rule : Rule[In, In, A, X, Err]) : SeqRule[In, A, X, Err] = new SeqRule(rule)
   
+  implicit def backTrackingRule[In, Out, A, X, Err <: X](rule : Rule[In, Out, A, X, Err]) = new Object {
+    def orError = rule.mapResult[Out, A, Nothing, X] { 
+      case s @ Success(_, _) => s
+      case Failure(x) => Error(x) 
+      case err @ Error(_) => err
+    }
+  }
+  
   def success[Out, A](out : Out, a : A) = from[Any] success(out, a)
   def failure[X](x : X) = from[Any] failure(x)
   def error[Err](err : Err) = from[Any] error(err)
@@ -74,11 +82,6 @@ trait Rule[-In, +Out, +A, +X, +Err] extends (In => Result[Out, A, X, Err]) {
       case _ => other(in)
     }
   }
-  //def orError[X2 >: Err <: X] : Rule[In, Out, A, Nothing, X] = mapResult[Out, A, Nothing, X] { 
-  //  case s @ Success(_, _) => s
-  //  case Failure(x) => Error(x) 
-  //  case err @ Error(_) => err
-  //}
   
   //def noError : Rule[In, Out, A, Nothing] = mapResult
   
@@ -96,6 +99,8 @@ trait Rule[-In, +Out, +A, +X, +Err] extends (In => Result[Out, A, X, Err]) {
   def ^^[B](fa2b : A => B) = map(fa2b)
   
   def ^^?[B](pf : PartialFunction[A, B]) = filter (pf.isDefinedAt(_)) ^^ pf 
+      
+  def ??(pf : PartialFunction[A, Any]) = filter (pf.isDefinedAt(_))
   
   def -^[B](b : B) = map { any => b }
  
@@ -120,11 +125,11 @@ trait Rule[-In, +Out, +A, +X, +Err] extends (In => Result[Out, A, X, Err]) {
 
   def ~>[Out2, B, X2 >: X, Err2 >: Err](next : => Out => Result[Out2, A => B, X2, Err2]) = for (a <- this; fa2b <- next) yield fa2b(a)
   
-  //def ~![Out2, B, X2 >: X, Err2 >: Err](next : => Rule[Out, Out2, B, X2, Err2]) = for (a <- this; b <- next orError) yield new ~(a, b)
+  def ~![Out2, B, Y >: Err](next : => Rule[Out, Out2, B, Y, Y]) = for (a <- this; b <- next orError) yield new ~(a, b)
   
-  //def ~-![Out2, B, X2 >: X, Err2 >: Err](next : => Rule[Out, Out2, B, X2, Err2]) = for (a <- this; b <- next orError) yield a
+  def ~-![Out2, B, Y >: Err](next : => Rule[Out, Out2, B, Y, Y]) = for (a <- this; b <- next orError) yield a
   
-  //def -~![Out2, B, X2 >: X, Err2 >: Err](next : => Rule[Out, Out2, B, X2, Err2]) = for (a <- this; b <- next orError) yield b
+  def -~![Out2, B, Y >: Err](next : => Rule[Out, Out2, B, Y, Y]) = for (a <- this; b <- next orError) yield b
   
   /** Creates a rule that suceeds only if this rule would fail on the given context. */
   def unary_! = createRule[In, _ <: In, X, A, Err] { in : In => 

@@ -12,7 +12,7 @@
 
 package scalax.rules.syntax.test
 
-trait TestScanner extends Scanner with Application {
+trait TestScanner extends Rules {
 
   def input(string : String) : S
   

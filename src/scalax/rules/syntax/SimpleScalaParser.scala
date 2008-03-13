@@ -15,6 +15,7 @@ package scalax.rules.syntax;
 
 class SimpleScalaParser extends MemoisableRules with ScalaParser {
   type S = Input#State
+  def nextChar = rule { _ next }
   
   //DefaultMemoisable.debug = true
   
@@ -32,7 +33,7 @@ class SimpleScalaParser extends MemoisableRules with ScalaParser {
     def apply(multiple : Boolean, canEnd : Boolean) = state(multiple, canEnd)
     
     case class State(multiple : Boolean, canEnd : Boolean) extends DefaultMemoisable {
-      def next = if (index < chars.length) 
+      def next : Result[Char] = if (index < chars.length) 
         Success(nextInput(multiple, canEnd), chars(index)) 
         else Failure("End of input")
         
@@ -52,7 +53,4 @@ class SimpleScalaParser extends MemoisableRules with ScalaParser {
     
   val position = read { input => () => input.index } //context ^^ { ctx => () => ctx.index }
   
-  def item = rule { _ next }
-
 }
-

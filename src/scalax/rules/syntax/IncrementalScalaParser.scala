@@ -19,7 +19,7 @@ package scalax.rules.syntax;
 class IncrementalScalaParser extends MemoisableRules with ScalaParser {
   type S = ScalaInput
   
-  def item = rule { _.next }
+  def nextChar = rule { _.next }
 
   def multiple(allow : Boolean) = read(_.multipleStatementsAllowed) ~- update(_.multipleStatementsAllowed = allow)
   val multipleStatementsAllowed = predicate(_.multipleStatementsAllowed)
