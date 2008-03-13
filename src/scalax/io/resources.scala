@@ -19,13 +19,32 @@ import java.nio.charset._
 import java.util.regex._
 import scalax.control._
 
-abstract class CloseableResource[C <: Closeable] extends UntranslatedManagedResource[C] {
-    override def unsafeClose(r : C) = r.close()
+abstract class ResourceFactory {
+	/** Resource type */
+	type RT
+	
+	def file(f : File) : RT
+	
+	def file(path : String) : RT = file(new File(path))
+	
+	def url(u : String) : RT
+	
+	def apply(path : String) = {
+		if (path.startsWith("/") || path.startsWith("./")) file(new File(path))
+		else url(path)
+	}
 }
 
-abstract class InputStreamResource[I <: InputStream] extends CloseableResource[I] {
+abstract class CloseableResource[+C <: Closeable] extends ManagedResource[C] {
+	type Handle <: C
+	final def translate(v : Handle) = v
+	override def unsafeClose(r : Handle) = r.close()
+}
+
+abstract class InputStreamResource[+I <: InputStream] extends CloseableResource[I] {
 	def buffered : InputStreamResource[BufferedInputStream] =
 		new InputStreamResource[BufferedInputStream] {
+			type Handle = BufferedInputStream
 			def unsafeOpen() = new BufferedInputStream(InputStreamResource.this.unsafeOpen())
 			override def buffered = this
 		}
@@ -35,6 +54,7 @@ abstract class InputStreamResource[I <: InputStream] extends CloseableResource[I
 	/* Obtains a Reader using the system default charset. */
 	def reader =
 		new ReaderResource[Reader] {
+			type Handle = Reader
 			// XXX: should be UTF-8 by default instead of OS default
 			// practically, here in Russia I never used default charset
 			def unsafeOpen() = {
@@ -51,6 +71,7 @@ abstract class InputStreamResource[I <: InputStream] extends CloseableResource[I
 	
 	def gunzip =
 		new InputStreamResource[GZIPInputStream] {
+			type Handle = GZIPInputStream
 			override def unsafeOpen() = {
 				val is = InputStreamResource.this.unsafeOpen()
 				try {
@@ -68,6 +89,7 @@ abstract class InputStreamResource[I <: InputStream] extends CloseableResource[I
 		// Do this lookup before opening the file, since it might fail.
 		val cs = Charset.forName(charset)
 		new ReaderResource[Reader] {
+			type Handle = Reader
 			def unsafeOpen() = {
 				val is = InputStreamResource.this.unsafeOpen()
 				try {
@@ -95,9 +117,12 @@ abstract class InputStreamResource[I <: InputStream] extends CloseableResource[I
 	}
 }
 
-object InputStreamResource {
+object InputStreamResource extends ResourceFactory {
+	type RT = InputStreamResource[InputStream]
+	
 	def bytes(array : Array[Byte], offset : Int, length : Int) =
 		new InputStreamResource[ByteArrayInputStream] {
+			type Handle = ByteArrayInputStream
 			def unsafeOpen() = new ByteArrayInputStream(array, offset, length)
 		}
 	
@@ -106,13 +131,13 @@ object InputStreamResource {
 	
 	def file(file : File) =
 		new InputStreamResource[FileInputStream] {
+			type Handle = FileInputStream
 			def unsafeOpen() = new FileInputStream(file)
 		}
 
-	def file(path : String): InputStreamResource[FileInputStream] = file(new File(path))
-
 	private def url(url : java.net.URL) =
 		new InputStreamResource[InputStream] {
+			type Handle = InputStream
 			def unsafeOpen() = {
 				// see org.springframework.core.io.UrlResource
 				val conn = url.openConnection()
@@ -126,6 +151,7 @@ object InputStreamResource {
 	
 	def classpath(path : String, classLoader: ClassLoader): InputStreamResource[InputStream] =
 		new InputStreamResource[InputStream] {
+			type Handle = InputStream
 			def unsafeOpen() = {
 				val is = classLoader.getResourceAsStream(path)
 				if (is eq null) throw new FileNotFoundException
@@ -144,19 +170,20 @@ object InputStreamResource {
 					.find(_._2)
 					.map(_._1)
 			if (gzippedO.isDefined) {
-				// XXX: avoid cast
-				url(u.substring(gzippedO.get.length)).gunzip.asInstanceOf[InputStreamResource[InputStream]]
+				url(u.substring(gzippedO.get.length)).gunzip
 			} else url(new URL(u))
 		}
 	}
 	
 }
 
-abstract class ReaderResource[R <: Reader] extends CloseableResource[R] {
+abstract class ReaderResource[+R <: Reader] extends CloseableResource[R] {
+
 	def slurp() = for (r <- this) yield StreamHelp.slurp(r)
 	
 	def buffered : ReaderResource[BufferedReader] =
 		new ReaderResource[BufferedReader] {
+			type Handle = BufferedReader
 			def unsafeOpen() = {
 				val reader = ReaderResource.this.unsafeOpen()
 				try {
@@ -192,13 +219,17 @@ abstract class ReaderResource[R <: Reader] extends CloseableResource[R] {
 object ReaderResource {
 	def string(s : String) =
 		new ReaderResource[StringReader] {
+			type Handle = StringReader
 			def unsafeOpen() = new StringReader(s)
 		}
 }
 
-abstract class OutputStreamResource[O <: OutputStream] extends CloseableResource[O] {
+abstract class OutputStreamResource[+O <: OutputStream] extends CloseableResource[O] {
+	
 	def buffered : OutputStreamResource[BufferedOutputStream] =
 		new OutputStreamResource[BufferedOutputStream] {
+			type Handle = BufferedOutputStream
+			
 			def unsafeOpen() = {
 				val os = OutputStreamResource.this.unsafeOpen()
 				try {
@@ -217,6 +248,7 @@ abstract class OutputStreamResource[O <: OutputStream] extends CloseableResource
 	/** Obtains a Writer using the system default charset. */
 	def writer =
 		new WriterResource[Writer] {
+			type Handle = Writer
 			def unsafeOpen() = {
 				val os = OutputStreamResource.this.unsafeOpen()
 				try {
@@ -231,6 +263,7 @@ abstract class OutputStreamResource[O <: OutputStream] extends CloseableResource
 	
 	def gzip =
 		new OutputStreamResource[GZIPOutputStream] {
+			type Handle = GZIPOutputStream
 			def unsafeOpen() = {
 				val os = OutputStreamResource.this.unsafeOpen()
 				try {
@@ -247,6 +280,7 @@ abstract class OutputStreamResource[O <: OutputStream] extends CloseableResource
 	def writer(charset : String) = {
 		val cs = Charset.forName(charset)
 		new WriterResource[Writer] {
+			type Handle = Writer
 			def unsafeOpen() = {
 				val os = OutputStreamResource.this.unsafeOpen()
 				try {
@@ -271,9 +305,12 @@ abstract class OutputStreamResource[O <: OutputStream] extends CloseableResource
 	}
 }
 
-object OutputStreamResource {
+object OutputStreamResource extends ResourceFactory {
+	type RT = OutputStreamResource[OutputStream]
+
 	def fileAppend(file : File, append : Boolean) =
 		new OutputStreamResource[FileOutputStream] {
+			type Handle = FileOutputStream
 			def unsafeOpen() =
 				new FileOutputStream(file, true)
 		}
@@ -283,6 +320,7 @@ object OutputStreamResource {
 		
 	def file(file : File) =
 		new OutputStreamResource[FileOutputStream] {
+			type Handle = FileOutputStream
 			def unsafeOpen() =
 				new FileOutputStream(file)
 		}
@@ -294,12 +332,15 @@ object OutputStreamResource {
 		if (u startsWith FILE_URL_PREFIX) file(new File(u substring FILE_URL_PREFIX.length))
 		else if (u startsWith GZIP_URL_PREFIX) url(u substring GZIP_URL_PREFIX.length).gzip
 		else throw new IllegalArgumentException("unknown url: " + u)
-	}.asInstanceOf[OutputStreamResource[OutputStream]] // XXX: avoid cast
+	}
+	
 }
 
-abstract class WriterResource[W <: Writer] extends CloseableResource[W] {
+abstract class WriterResource[+W <: Writer] extends CloseableResource[W] {
+	
 	def buffered : WriterResource[BufferedWriter] =
 		new WriterResource[BufferedWriter] {
+			type Handle = BufferedWriter
 			def unsafeOpen() = {
 				val writer = WriterResource.this.unsafeOpen()
 				try {
@@ -316,6 +357,7 @@ abstract class WriterResource[W <: Writer] extends CloseableResource[W] {
 	
 	def printWriter: WriterResource[PrintWriter] =
 		new WriterResource[PrintWriter] {
+			type Handle = PrintWriter
 			def unsafeOpen() = {
 				val writer = WriterResource.this.unsafeOpen()
 				try {
