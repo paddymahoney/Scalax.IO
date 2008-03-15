@@ -16,7 +16,7 @@ trait IncrementalScanner extends IncrementalParser[Char] with Scanner
 
 trait IncrementalParser[A] extends Parser[A] with MemoisableRules {
   type S = IncrementalInput[A]
-  val item = rule { _.next }
+  val item = from[S] { _ next }
 }
 
 class IncrementalInput[A]
@@ -24,7 +24,7 @@ class IncrementalInput[A]
     with DefaultMemoisable 
     with Ordered[IncrementalInput[A]] { self : IncrementalInput[A] =>
 
-  var next : Result[IncrementalInput[A], A, Unit, Nothing] = Failure((), true)
+  var next : Result[IncrementalInput[A], A, Nothing] = Failure
   var index : Int = 0
 
   def compare(other : IncrementalInput[A]) = index - other.index

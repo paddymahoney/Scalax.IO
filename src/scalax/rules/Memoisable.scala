@@ -14,10 +14,10 @@ package scalax.rules
 
 import scala.collection.mutable.HashMap
 
-trait MemoisableRules extends Rules {
+trait MemoisableRules extends StateRules {
   type S <: Memoisable
   
-  override def createRule[In, Out, A, X, Err](name : String, f : In => rules.Result[Out, A, X, Err]) = super.createRule(name, (in : In) => in match {
+  override def ruleWithName[In, Out, A, X](name : String, f : In => rules.Result[Out, A, X]) = super.ruleWithName(name, (in : In) => in match {
       case s : Memoisable => s.memo(name, f(in))
       case _ => f(in)
     })

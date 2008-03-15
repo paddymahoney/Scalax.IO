@@ -12,6 +12,39 @@
 
 package scalax.rules
 
+trait Name {
+  def name : String
+  override def toString = name
+}
+
+trait RuleFactory {
+  implicit def rule[In, Out, A, X](f : In => Result[Out, A, X]) : Rule[In, Out, A, X] = new DefaultRule(f)
+
+  implicit def seqRule[In, A, X](rule : Rule[In, In, A, X]) : SeqRule[In, A, X] = new SeqRule(rule)
+  
+  def from[In] = new {
+    def apply[Out, A, X, Err](f : In => Result[Out, A, X]) = rule(f)
+    def error = apply { in => Error(in) }
+    def unit[A](a : A) = apply { in => Success(in, a) }
+    def get = apply { in => Success(in, in) }
+    def read[A](f : In => A) = apply { in => Success(in, f(in)) }
+  }
+  
+  def success[Out, A](out : Out, a : A) = rule { in : Any => Success(out, a) }
+  def failure = rule { in : Any => Failure }
+  def error[X](err : X) = { in : Any => Error(err) }
+
+  def ruleWithName[In, Out, A, X](_name : String, f : In => Result[Out, A, X]) : Rule[In, Out, A, X] with Name = 
+    new DefaultRule(f) with Name {
+      val name = _name
+    }
+
+  class DefaultRule[In, Out, A, X](f : In => Result[Out, A, X]) extends Rule[In, Out, A, X] {
+    val factory = RuleFactory.this
+    def apply(in : In) = f(in)
+  }
+}
+
 /** Defines Rules that apply to a particular Context.
  * 
  * The result may be:
@@ -25,23 +58,19 @@ package scalax.rules
  
  * Inspired by the Scala parser combinator.
  */
-trait Rules extends RuleFactory { //extends MonadsWithZero with StateReader {
+trait StateRules extends RuleFactory {
   type S
-  type Rule[+A] = rules.Rule[S, S, A, Any, Nothing]
-  type Result[A] = rules.Result[S, A, Any, Nothing]
+  type Rule[+A] = rules.Rule[S, S, A, Nothing]
+  type Result[A] = rules.Result[S, A, Nothing]
   
-  implicit def rule[A](f : S => Result[A]) : Rule[A] = createRule(f)
-  
-  def get = rule[S] { s => Success(s, s) }
-  def read[A](f : S => A) = rule[A] { s => Success(s, f(s)) }
-  def set(s : => S) = rule { oldS => Success(s, oldS) }
-  def update(f : S => S) = rule { s => Success(f(s), s) }
+  def get = from[S] { s => Success(s, s) }
+  def read[A](f : S => A) = from[S] read(f)
+  def set(s : => S) = from[S] { oldS => Success(s, oldS) }
+  def update(f : S => S) = from[S] { s => Success(f(s), s) }
   
   /** Creates a Rule that always succeeds with the specified value. */
-  def success[A](a : A) = rule[A] { s => Success(s, a) }
+  def success[A](a : A) = from[S] unit(a)
     
-  val failure = rule[Nothing] { s => Failure() }
-  
   lazy val nil = success(Nil)
   lazy val none = success(None)
     
@@ -55,13 +84,10 @@ trait Rules extends RuleFactory { //extends MonadsWithZero with StateReader {
    */
   def expect[A](rule : Rule[A]) : S => A = (context) => rule(context) match {
     case Success(_, a) => a
-    case Failure(x) => throw new RuntimeException("Unexpected failure: " + x)
+    case Failure => throw new RuntimeException("Unexpected failure")
     case Error(x) => throw new RuntimeException("Unexpected failure: " + x)
   }
     
   def select[A](rules : Collection[Rule[A]]) : Rule[A] = rules.reduceLeft[Rule[A]](_ | _)
-  
-  
-
 }
 

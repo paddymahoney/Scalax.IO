@@ -35,7 +35,7 @@ class SimpleScalaParser extends MemoisableRules with ScalaParser {
     case class State(multiple : Boolean, canEnd : Boolean) extends DefaultMemoisable {
       def next : Result[Char] = if (index < chars.length) 
         Success(nextInput(multiple, canEnd), chars(index)) 
-        else Failure("End of input")
+        else Failure
         
       def apply(multiple : Boolean, canEnd : Boolean) = state(multiple, canEnd)
       def index = Input.this.index

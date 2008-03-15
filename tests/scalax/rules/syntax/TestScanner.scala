@@ -12,7 +12,7 @@
 
 package scalax.rules.syntax.test
 
-trait TestScanner extends Rules {
+trait TestScanner extends StateRules {
 
   def input(string : String) : S
   
@@ -50,7 +50,7 @@ trait TestScanner extends Rules {
   def checkFailure[A](rule : Rule[A])(inputs : String *) {
     for (string <- inputs) {
       rule(input(string)) match {
-        case rules.Failure(_) => ()
+        case Failure => ()
         case actual => error ("Input: " + string + 
           "\nExpected Failure" + 
           "\nActual result: " + actual)

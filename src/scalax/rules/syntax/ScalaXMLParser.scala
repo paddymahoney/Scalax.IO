@@ -51,7 +51,7 @@ trait ScalaXMLParser extends ScalaScanner {
   val tagEnd = '>' as "tagEnd"
   val endTag = "</" as "endTag"
   
-  def debug(message : String) : Rule[Nothing] = token >> { t => s => println(message + " (next token: " + t + ")"); Failure(()) }
+  def debug(message : String) : Rule[Nothing] = token >> { t => s => println(message + " (next token: " + t + ")"); Failure }
   
   lazy val xmlExpr = skip -~ (xmlElement  | cDataSect | pi +) ^^ NodeList as "xmlExpr"
   lazy val xmlElement = startElement -~ elementName ~ (attribute*) ~- (xmlS?) >~> xmlElementRest

@@ -26,12 +26,12 @@ case class Function(argName : Name, argType : Type, body : Term) extends Term
 case class App(function : Term, arg : Term) extends Term
 
 
-class BindingRules[T] extends Rules {
+class BindingRules[T] extends StateRules {
   type S = Map[Name, T]
   val empty : S = Map.empty[Name, T]
   
   def bind(name : Name, value : T) : Rule[T] = rule { ctx => Success(ctx(name) = value, value) }
-  def boundValue(name : Name) : Rule[T] = rule { ctx => if (ctx.contains(name)) Success(ctx, ctx(name)) else Failure() }
+  def boundValue(name : Name) : Rule[T] = rule { ctx => if (ctx.contains(name)) Success(ctx, ctx(name)) else Failure }
 }
 
 class Typer extends BindingRules[Type] {

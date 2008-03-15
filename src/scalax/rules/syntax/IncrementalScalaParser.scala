@@ -39,9 +39,9 @@ class ScalaInput(val input : IncrementalInput[Char], val state : ParserState)
   
   def index = input.index
   
-  def next : Result[ScalaInput, Char, Any, Nothing] = input.next match {
+  def next : Result[ScalaInput, Char, Nothing] = input.next match {
     case Success(input, ch) => Success(new ScalaInput(input, state), ch)
-    case _ => Failure(())
+    case _ => Failure
   }
   
   def state_=(state : ParserState) = new ScalaInput(input, state)

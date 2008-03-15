@@ -12,12 +12,12 @@
 
 package scalax.rules.example
 
-class ParamMatcher extends Rules {
+class ParamMatcher extends StateRules {
   type S = Map[String, String]
   
   implicit def param(name : String) : Rule[String] = rule { params => 
     if (params.contains(name)) Success(params, params(name)) 
-    else Failure("Not found: " + name) 
+    else Failure 
   }
   
   def intParam(name : String) = param(name) ^^? { case string if string matches "\\d+" => string.toInt }

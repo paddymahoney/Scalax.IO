@@ -12,21 +12,22 @@
 
 package scalax.rules.example
 
-trait ArithmeticEvaluator extends Scanner {
-  lazy val expr : Rule[Int] = term ~*~ (op('+', _ + _) | op('-', _ - _)) as "expr"
-  lazy val term : Rule[Int] = factor ~*~ (op('*', _ * _) | op('/', _ / _)) as "term"
-  lazy val factor : Rule[Int] = trim(number | '(' -~ expr ~- ')') as "factor" 
+trait ArithmeticEvaluator extends Scanners {
+  lazy val expr : Parser[Int] = term ~*~ (op('+', _ + _) | op('-', _ - _)) as "expr"
+  lazy val term : Parser[Int] = factor ~*~ (op('*', _ * _) | op('/', _ / _)) as "term"
+  lazy val factor : Parser[Int] = trim(number | '(' -~ expr ~- ')') as "factor" 
   lazy val number = (('0' to '9')+) ^^ toString ^^ (_ toInt) as "number"
   
-  private def op(r : Rule[Any], f : (Int, Int) => Int) = r -^ f
+  private def op(r : Parser[Any], f : (Int, Int) => Int) = r -^ f
 
-  def evaluate = expect(expr ~- (!item | failure("Invalid expression")))
+  def evaluate = expr ~- !item | error("Invalid expression")
 }
   
-object ExampleUsage extends ArithmeticEvaluator with StringScanner with Application {
+object ExampleUsage extends ArithmeticEvaluator with StringScanners with Application {
   println(evaluate("7 + 5 * (5+ 6 / 2 - 1)"))
 }
 
+/*
 object ExampleUsage2 extends ArithmeticEvaluator with IncrementalScanner with Application {
   
   DefaultMemoisable.debug = true
@@ -44,3 +45,4 @@ object ExampleUsage2 extends ArithmeticEvaluator with IncrementalScanner with Ap
   input.edit(0, 4, "")
   println(evaluate(input))
 }
+*/

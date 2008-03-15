@@ -27,10 +27,10 @@ class PrettyPrinter extends SimpleScalaParser {
   
   /** Look for a memoised result.  This is very ugly - try to think of a better way! */
   def recall(key : String) = (
-      multiple(true) -~ lastTokenCanEndStatement(true) -~ createRule(key, failure)
-      | multiple(true) -~ lastTokenCanEndStatement(false) -~ createRule(key, failure)
-      | multiple(false) -~ lastTokenCanEndStatement(true) -~ createRule(key, failure)
-      | multiple(false) -~ lastTokenCanEndStatement(false) -~ createRule(key, failure)) -~ index
+      multiple(true) -~ lastTokenCanEndStatement(true) -~ ruleWithName(key, failure)
+      | multiple(true) -~ lastTokenCanEndStatement(false) -~ ruleWithName(key, failure)
+      | multiple(false) -~ lastTokenCanEndStatement(true) -~ ruleWithName(key, failure)
+      | multiple(false) -~ lastTokenCanEndStatement(false) -~ ruleWithName(key, failure)) -~ index
       
   def escape(key : String) = ((recall(key) &) >> escapeTo &) ~- recall(key)
   def span(styleClass : String)(rule : Rule[String]) = rule ^^ ("<span class=\"" + styleClass + "\">" + _ + "</span>")
