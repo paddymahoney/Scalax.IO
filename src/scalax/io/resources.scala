@@ -112,45 +112,43 @@ abstract class InputStreamResource[+I <: InputStream] extends CloseableResource[
 object InputStreamResource extends ResourceFactory {
 	type RT = InputStreamResource[InputStream]
 	
-	def bytes(array : Array[Byte], offset : Int, length : Int) =
-		new InputStreamResource[ByteArrayInputStream] {
-			type Handle = ByteArrayInputStream
-			def unsafeOpen() = new ByteArrayInputStream(array, offset, length)
+	def apply[I <: InputStream](is : => I) =
+		new InputStreamResource[I] {
+			type Handle = I
+			def unsafeOpen() = is
 		}
+	
+	def bytes(array : Array[Byte], offset : Int, length : Int) =
+		apply(new ByteArrayInputStream(array, offset, length))
 	
 	def bytes(b : Array[Byte]) : InputStreamResource[ByteArrayInputStream] =
 		bytes(b, 0, b.length)
 	
 	def file(file : File) =
-		new InputStreamResource[FileInputStream] {
-			type Handle = FileInputStream
-			def unsafeOpen() = new FileInputStream(file)
-		}
+		apply(new FileInputStream(file))
 
-	private def url(url : java.net.URL) =
-		new InputStreamResource[InputStream] {
-			type Handle = InputStream
-			def unsafeOpen() = {
-				// see org.springframework.core.io.UrlResource
-				val conn = url.openConnection()
-				conn.setUseCaches(false)
-				conn.getInputStream()
-			}
+	private def url(url : java.net.URL) = {
+		def is = {
+			// see org.springframework.core.io.UrlResource
+			val conn = url.openConnection()
+			conn.setUseCaches(false)
+			conn.getInputStream()
 		}
+		apply(is)
+	}
 	
 	def classpath(path : String): InputStreamResource[InputStream] =
 		classpath(path, Thread.currentThread.getContextClassLoader)
 	
-	def classpath(path : String, classLoader: ClassLoader): InputStreamResource[InputStream] =
-		new InputStreamResource[InputStream] {
-			type Handle = InputStream
-			def unsafeOpen() = {
-				val is = classLoader.getResourceAsStream(path)
-				if (is eq null) throw new FileNotFoundException
-				is
-			}
+	def classpath(path : String, classLoader: ClassLoader): InputStreamResource[InputStream] = {
+		def is = {
+			val is = classLoader.getResourceAsStream(path)
+			if (is eq null) throw new FileNotFoundException
+			is
 		}
-	
+		apply(is)
+	}
+
 	private val CLASSPATH_URL_PREFIX = "classpath:"
 	
 	private val GZIP_URL_PREFIXES = List("gzip:", "gunzip:")
@@ -201,9 +199,12 @@ abstract class ReaderResource[+R <: Reader] extends CloseableResource[R] {
 
 object ReaderResource {
 	def string(s : String) =
-		new ReaderResource[StringReader] {
-			type Handle = StringReader
-			def unsafeOpen() = new StringReader(s)
+		apply(new StringReader(s))
+	
+	def apply[R <: Reader](r : => R) =
+		new ReaderResource[R] {
+			type Handle = R
+			def unsafeOpen() = r
 		}
 }
 
@@ -253,23 +254,21 @@ abstract class OutputStreamResource[+O <: OutputStream] extends CloseableResourc
 
 object OutputStreamResource extends ResourceFactory {
 	type RT = OutputStreamResource[OutputStream]
+	
+	def apply[O <: OutputStream](os : => O) =
+		new OutputStreamResource[O] {
+			type Handle = O
+			def unsafeOpen() = os
+		}
 
 	def fileAppend(file : File, append : Boolean) =
-		new OutputStreamResource[FileOutputStream] {
-			type Handle = FileOutputStream
-			def unsafeOpen() =
-				new FileOutputStream(file, true)
-		}
+		apply(new FileOutputStream(file, append))
 	
 	def fileAppend(file : File) : OutputStreamResource[FileOutputStream] =
 		fileAppend(file, true)
 		
 	def file(file : File) =
-		new OutputStreamResource[FileOutputStream] {
-			type Handle = FileOutputStream
-			def unsafeOpen() =
-				new FileOutputStream(file)
-		}
+		apply(new FileOutputStream(file))
 		
 	private val FILE_URL_PREFIX = "file:"
 	private val GZIP_URL_PREFIX = "gzip:"
@@ -320,6 +319,14 @@ abstract class WriterResource[+W <: Writer] extends CloseableResource[W] {
 	def pumpFrom[R <: Reader](rr : ReaderResource[R]) {
 		rr pumpTo this
 	}
+}
+
+object WriterResource {
+	def apply[W <: Writer](w : => W) =
+		new WriterResource[W] {
+			type Handle = W
+			def unsafeOpen() = w
+		}
 }
 
 // vim: set ts=4 sw=4 noet:
