@@ -27,8 +27,8 @@ object ExampleUsage extends ArithmeticEvaluator with StringScanners with Applica
   println(evaluate("7 + 5 * (5+ 6 / 2 - 1)"))
 }
 
-/*
-object ExampleUsage2 extends ArithmeticEvaluator with IncrementalScanner with Application {
+
+object ExampleUsage2 extends ArithmeticEvaluator with IncrementalScanners with Application {
   
   DefaultMemoisable.debug = true
   
@@ -45,4 +45,3 @@ object ExampleUsage2 extends ArithmeticEvaluator with IncrementalScanner with Ap
   input.edit(0, 4, "")
   println(evaluate(input))
 }
-*/

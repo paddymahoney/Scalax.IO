@@ -12,10 +12,10 @@
 
 package scalax.rules.example
 
-class ParamMatcher extends StateRules {
+class ParamMatcher extends Rules {
   type S = Map[String, String]
   
-  implicit def param(name : String) : Rule[String] = rule { params => 
+  implicit def param(name : String) = from[S] { params => 
     if (params.contains(name)) Success(params, params(name)) 
     else Failure 
   }

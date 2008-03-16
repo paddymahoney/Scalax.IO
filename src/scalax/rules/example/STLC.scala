@@ -26,21 +26,21 @@ case class Function(argName : Name, argType : Type, body : Term) extends Term
 case class App(function : Term, arg : Term) extends Term
 
 
-class BindingRules[T] extends StateRules {
+class BindingRules[T] extends RulesWithState {
   type S = Map[Name, T]
   val empty : S = Map.empty[Name, T]
   
-  def bind(name : Name, value : T) : Rule[T] = rule { ctx => Success(ctx(name) = value, value) }
-  def boundValue(name : Name) : Rule[T] = rule { ctx => if (ctx.contains(name)) Success(ctx, ctx(name)) else Failure }
+  def bind(name : Name, value : T) = apply { ctx => Success(ctx(name) = value, value) }
+  def boundValue(name : Name) = apply { ctx => if (ctx.contains(name)) Success(ctx, ctx(name)) else Failure }
 }
 
 class Typer extends BindingRules[Type] {
-  def typeOf(term : Term) : Rule[Type] = success(term) >> {
-    case True | False => success(BooleanType)
+  def typeOf(term : Term) : Rule[Type, Nothing] = unit(term) >> {
+    case True | False => unit(BooleanType)
     case Variable(name) => boundValue(name)
     case Function(n, t, body) => bind(n, t) ~ typeOf(body) ^~^ FunctionType &
     case App(function, arg) => typeOf(function) ~ typeOf(arg) >>? {
-      case FunctionType(from, to) ~ argType if (from == argType) => success(to)
+      case FunctionType(from, to) ~ argType if (from == argType) => unit(to)
     }
   }
 }
@@ -50,10 +50,10 @@ object TestTyper extends Typer with Application {
 
   def check(pairs : (Term, Type)*) {
     for ((term, expected) <- pairs) typeOf(term)(empty) match {
-      case Success(_ , actual) => if (actual != expected) error("Term: " + term + 
+      case Success(_ , actual) => if (actual != expected) Predef.error("Term: " + term + 
           "\nExpected type: " + expected +
           "\nActual type: " + actual)
-      case _ => error("Term: " + term + 
+      case _ => Predef.error("Term: " + term + 
           "\nExpected type: " + expected +
           "\nDid not typecheck")
     }

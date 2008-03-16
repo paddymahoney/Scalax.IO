@@ -47,7 +47,7 @@ class SeqRule[S, +A, +X](rule : Rule[S, S, A, X]) {
   def +/(sep : => Rule[S, S, Any, Any]) = rule ~++ (sep -~ rule *)
 
   /** Repeats this rule zero or more times with a separator (which is discarded) */
-  def */(sep : => Rule[S, S, Any, Any]) = +/(sep) | from[S].unit[List[A]](Nil)
+  def */(sep : => Rule[S, S, Any, Any]) = +/(sep) | state[S].nil
   
   def *~-[Out, Y](end : => Rule[S, Out, Any, Y]) = (rule - end *) ~- end
   def +~-[Out, X2 >: X](end : => Rule[S, Out, Any, X2]) = (rule - end +) ~- end

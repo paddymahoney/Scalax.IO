@@ -17,7 +17,7 @@ class PrettyPrinter extends SimpleScalaParser {
   val index = position ^^ (_())
   def at(pos : Int) = index filter (_ == pos)
   
-  val escapeItem : Rule[String] = (scanner.newline -^ "<br />\n"
+  val escapeItem : Parser[String] = (scanner.newline -^ "<br />\n"
     | scanner.elem(' ') -^ "&#160;"
     | scanner.elem('&') -^ "&amp;"
     | scanner.elem('<') -^ "&lt;"
@@ -33,7 +33,7 @@ class PrettyPrinter extends SimpleScalaParser {
       | multiple(false) -~ lastTokenCanEndStatement(false) -~ ruleWithName(key, failure)) -~ index
       
   def escape(key : String) = ((recall(key) &) >> escapeTo &) ~- recall(key)
-  def span(styleClass : String)(rule : Rule[String]) = rule ^^ ("<span class=\"" + styleClass + "\">" + _ + "</span>")
+  def span(styleClass : String)(rule : Parser[String]) = rule ^^ ("<span class=\"" + styleClass + "\">" + _ + "</span>")
   def style(key : String) = span(key)(escape(key))
   
   val prettyPrint = (
@@ -51,6 +51,9 @@ class PrettyPrinter extends SimpleScalaParser {
           | escape("endTag"))
       | escapeItem *) ^^ scanner.toString
       
-  def prettyPrintFor(rule : Rule[Any]) = expect(((rule&) | none) -~ prettyPrint)
+  def prettyPrintFor(rule : Parser[Any])(input : S) = ((rule&) -~ prettyPrint)(input) match {
+    case Success(_, text) => text
+    case _ => ""
+  }
   
 }

@@ -33,7 +33,7 @@ class SimpleScalaParser extends MemoisableRules with ScalaParser {
     def apply(multiple : Boolean, canEnd : Boolean) = state(multiple, canEnd)
     
     case class State(multiple : Boolean, canEnd : Boolean) extends DefaultMemoisable {
-      def next : Result[Char] = if (index < chars.length) 
+      def next : Result[S, Char, Nothing] = if (index < chars.length) 
         Success(nextInput(multiple, canEnd), chars(index)) 
         else Failure
         
@@ -45,12 +45,12 @@ class SimpleScalaParser extends MemoisableRules with ScalaParser {
   
   def input(chars : Seq[Char]) = Input(chars, 0)(true, false)
   
-  val multipleStatementsAllowed = predicate(_.multiple)
-  val lastTokenCanEndStatement = predicate(_.canEnd)
+  val multipleStatementsAllowed = cond(_.multiple)
+  val lastTokenCanEndStatement = cond(_.canEnd)
 
   def multiple(allow : Boolean) = rule { input => Success(input(allow, input.canEnd), input.multiple) }
   def lastTokenCanEndStatement(value : Boolean) = rule { input => Success(input(input.multiple, value), input.canEnd) }
     
-  val position = read { input => () => input.index } //context ^^ { ctx => () => ctx.index }
+  val position = read { input => () => input.index }
   
 }

@@ -14,9 +14,7 @@ package scalax.rules
 
 import scala.collection.mutable.HashMap
 
-trait MemoisableRules extends StateRules {
-  type S <: Memoisable
-  
+trait MemoisableRules extends Rules {
   override def ruleWithName[In, Out, A, X](name : String, f : In => rules.Result[Out, A, X]) = super.ruleWithName(name, (in : In) => in match {
       case s : Memoisable => s.memo(name, f(in))
       case _ => f(in)
@@ -41,7 +39,9 @@ trait DefaultMemoisable extends Memoisable {
   
   protected def compute[A](key : AnyRef, a : => A) = a match {
     case success : Success[_, _] => onSuccess(key, success); success
-    case other => other
+    case other => 
+      if(DefaultMemoisable.debug) println(key + " -> " + other) 
+      other
   }
   
   protected def onSuccess[S, T](key : AnyRef,  result : Success[S, T])  { 

@@ -22,12 +22,12 @@ class IncrementalScalaParser extends MemoisableRules with ScalaParser {
   def nextChar = rule { _.next }
 
   def multiple(allow : Boolean) = read(_.multipleStatementsAllowed) ~- update(_.multipleStatementsAllowed = allow)
-  val multipleStatementsAllowed = predicate(_.multipleStatementsAllowed)
+  val multipleStatementsAllowed = cond(_.multipleStatementsAllowed)
 
   def lastTokenCanEndStatement(value : Boolean) = update(_.lastTokenCanEndStatement = value) 
-  val lastTokenCanEndStatement = predicate(_.lastTokenCanEndStatement)
+  val lastTokenCanEndStatement = cond(_.lastTokenCanEndStatement)
     
-  val position = context ^^ { ctx => () => ctx.index }
+  val position = read { ctx => () => ctx.index }
 }
 
 case class ParserState(multipleStatementsAllowed : Boolean, lastTokenCanEndStatement : Boolean) 

@@ -15,42 +15,43 @@ package scalax.rules
 /**
  * Rules that operate on sequential input
  */
-trait Parser[A] extends StateRules {
+trait Parsers[T] extends RulesWithState {
+  
+  type Parser[A] = Rule[A, Nothing]
+    
   /** Succeeds with the first element of the input unless input is empty. */
-  def item : Rule[A]
+  def item : Parser[T]
 
-  implicit def elem(a : A) : Rule[A] = item filter (_ == a)
+  implicit def elem(t : T) = item.filter(_ == t)
 
-  def readSeq[C <% Seq[A]](seq : C) : Rule[C] = if (seq isEmpty) success(seq)
-      else seq.map(elem(_)).reduceLeft[Rule[A]](_ -~ _) -^ seq
+  def readSeq[C <% Seq[T]](seq : C) = allOf(seq map elem) -^ seq
 
-  def choice[C <% Seq[A]](seq : C) : Rule[A] = select(seq.map(elem))
+  def choice[C <% Seq[T]](seq : C) = oneOf(seq map elem)
 
   /** Allows rules like 'a' to 'z' */
-  implicit def iteratorToChoice[B <: Iterator[A]](iterator : B) : Rule[A] = choice(iterator.toList)
-  implicit def iteratorToChoiceSeq[B <: Iterator[A]](iterator : B) = seqRule(iteratorToChoice(iterator))
+  implicit def iteratorToChoice[TS <: Iterator[T]](iterator : TS) : Parser[T] = choice(iterator.toList)
+  implicit def iteratorToChoiceSeq[TS <: Iterator[T]](iterator : TS) = seqRule(iteratorToChoice(iterator))
 }
 
 /**
  * Rules that operate on a sequence of characters.
  */
-trait Scanner extends Parser[Char] {
-  implicit def readString(string : String) : Rule[String] = readSeq(string)
+trait Scanners extends Parsers[Char] {
+  implicit def readString(string : String) : Parser[String] = readSeq(string)
 
   def toString(seq : Seq[Any]) = seq.mkString("")
-      
-  import Character._
-  def whitespace = item filter isWhitespace *
+        
+  def whitespace = item filter Character.isWhitespace *
   def newline = "\r\n" | "\n" | "\r"
 
-  def trim[A](rule : Rule[A]) = whitespace -~ rule ~- whitespace
+  def trim[A](rule : Parser[A]) = whitespace -~ rule ~- whitespace
 }
 
 
-trait StringScanner extends Scanner {
+trait StringScanners extends Scanners {
   type S = String
-  
-  val item = from[S] { 
+    
+  val item = from[String] { 
     case "" => Failure
     case s => Success(s.substring(1), s.charAt(0)) 
   }

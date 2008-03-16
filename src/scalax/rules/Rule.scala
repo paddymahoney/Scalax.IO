@@ -12,36 +12,49 @@
 
 package scalax.rules
 
+/** A Rule is a function from some input to a Result.  The result may be:
+  * <ul>
+  * <li>Success, with a value of some type and an output that may serve as the input to subsequent rules.</li> 
+  * <li>Failure. A failure may result in some alternative rule being applied.</li>
+  * <li>Error.  No further rules should be attempted.</li>
+  * </ul>
+  *
+  * @author Andrew Foggin
+  *   
+  * Inspired by the Scala parser combinator.
+  */
 trait Rule[-In, +Out, +A, +X] extends (In => Result[Out, A, X]) { 
-  val factory : RuleFactory
+  val factory : Rules
   import factory._
   
   def as(name : String) = ruleWithName(name, this)
   
-  def flatMap[Out2, B, X2 >: X](fa2ruleb : A => Out => Result[Out2, B, X2]) = rule { 
-    in : In => apply(in) match {
+  def flatMap[Out2, B, X2 >: X](fa2ruleb : A => Out => Result[Out2, B, X2]) = mapResult { 
       case Success(out, a) => fa2ruleb(a)(out)
+      case Failure => Failure
       case err @ Error(_) => err
-      case _ => Failure
-    }
   }
   
   def map[B](fa2b : A => B) = flatMap { a => out => Success(out, fa2b(a)) }
 
   def filter(f : A => Boolean) = flatMap { a => out => if(f(a)) Success(out, a) else Failure }
 
-  def orElse[In2 <: In, Out2 >: Out, A2 >: A, X2 >: X](other : => Rule[In2, Out2, A2, X2]) = rule { 
-    in : In2 => apply(in) match {
-      case s @ Success(_, _) => s
-      case err @ Error(_) => err
-      case _ => other(in)
-    }
+  def orElse[In2 <: In, Out2 >: Out, A2 >: A, X2 >: X](other : => Rule[In2, Out2, A2, X2]) = mapRule { 
+    case s @ Success(_, _) => in : In2 => s
+    case Failure => in : In2 => other(in)
+    case err @ Error(_) => in : In2 => err
   }
+  
+  def orError = orElse(error[In])
   
   def mapResult[Out2, B, Y](f : Result[Out, A, X] => Result[Out2, B, Y]) = rule { 
     in : In => f(apply(in))
   }
   
+  def mapRule[In2 <: In, Out2, B, Y](f : Result[Out, A, X] => In2 => Result[Out2, B, Y]) = rule { 
+    in : In2 => f(apply(in))(in)
+  }
+
   def |[In2 <: In, Out2 >: Out, A2 >: A, X2 >: X](other : => Rule[In2, Out2, A2, X2]) = orElse(other)
 
   def ^^[B](fa2b : A => B) = map(fa2b)
@@ -52,11 +65,13 @@ trait Rule[-In, +Out, +A, +X] extends (In => Result[Out, A, X]) {
   
   def -^[B](b : B) = map { any => b }
  
-  /** Maps an Error or Failure */
-  //def |^[Y](fx2y : X => Y) = createRule { in : In => apply(in) mapFailure fx2y }
+  /** Maps an Error */
+  def !^[Y](fx2y : X => Y) = mapResult { 
+    case s @ Success(_, _) => s
+    case Failure => Failure
+    case Error(x) => Error(fx2y(x))
+  }
     
-  //def |>[In2 <: In, Y](f : In2 => Y) = createRule { in : In2 => apply(in) mapFailure { any => f(in) } }
-  
   def >>[Out2, B, X2 >: X](fa2ruleb : A => Out => Result[Out2, B, X2]) = flatMap(fa2ruleb)
   
   def >->[Out2, B, X2 >: X](fa2resultb : A => Result[Out2, B, X2]) = flatMap { a => any => fa2resultb(a) }
@@ -71,29 +86,29 @@ trait Rule[-In, +Out, +A, +X] extends (In => Result[Out, A, X]) {
   
   def ~++[Out2, B >: A, X2 >: X](next : => Rule[Out, Out2, Seq[B], X2]) = for (a <- this; b <- next) yield a :: b.toList
 
-  def ~>[Out2, B, X2 >: X](next : => Out => Result[Out2, A => B, X2]) = for (a <- this; fa2b <- next) yield fa2b(a)
+  /** Apply the result of this rule to the function returned by the next rule */
+  def ~>[Out2, B, X2 >: X](next : => Rule[Out, Out2, A => B, X2]) = for (a <- this; fa2b <- next) yield fa2b(a)
   
-  //def ~![Out2, B, Y >: Err](next : => Rule[Out, Out2, B, Y, Y]) = for (a <- this; b <- next orError) yield new ~(a, b)
+  /** Apply the result of this rule to the function returned by the previous rule */
+  def <~:[InPrev, B, X2 >: X](prev : => Rule[InPrev, In, A => B, X2]) = for (fa2b <- prev; a <- this) yield fa2b(a)
+    
+  def ~![Out2, B, X2 >: X](next : => Rule[Out, Out2, B, X2]) = for (a <- this; b <- next orError) yield new ~(a, b)
   
-  //def ~-![Out2, B, Y >: Err](next : => Rule[Out, Out2, B, Y, Y]) = for (a <- this; b <- next orError) yield a
+  def ~-![Out2, B, X2 >: X](next : => Rule[Out, Out2, B, X2]) = for (a <- this; b <- next orError) yield a
   
-  //def -~![Out2, B, Y >: Err](next : => Rule[Out, Out2, B, Y, Y]) = for (a <- this; b <- next orError) yield b
+  def -~![Out2, B, X2 >: X](next : => Rule[Out, Out2, B, X2]) = for (a <- this; b <- next orError) yield b
   
   /** Creates a rule that suceeds only if this rule would fail on the given context. */
-  def unary_! = rule[In, _ <: In, Unit, Nothing] { in : In => 
-    apply(in) match {
-      case Success(_, a) => Failure
-      case _ => Success(in, ())
-    }
+  def unary_! = mapRule[In, _ <: In, Unit, Nothing] { 
+    case Success(_, a) => in => Failure
+    case _ => in => Success(in, ())
   }
-  
+
   /** Creates a rule that succeeds if this rule succeeds, but returns the original input. */
-  def & = rule[In, _ <: In, A, X] { in : In => 
-    apply(in) match {
-      case Success(_, a) => Success(in, a)
-      case Failure => Failure
-      case err : Error[_] => err
-    }
+  def & = mapRule[In, _ <: In, A, X] {
+    case Success(_, a) => in => Success(in, a)
+    case Failure => in => Failure
+    case err : Error[_] => in => err
   }
     
   def -[In2 <: In](exclude : => Rule[In2, Any, Any, Any]) = !exclude -~ this

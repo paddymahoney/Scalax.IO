@@ -22,8 +22,8 @@ import Character._
  */
 trait ScalaXMLParser extends ScalaScanner {
 
-  def scalaPattern : Rule[Expression]
-  def scalaExpr : Rule[Expression]
+  def scalaPattern : Parser[Expression]
+  def scalaExpr : Parser[Expression]
   
   val xmlNameStart = (elem('_')
       | unicode(LOWERCASE_LETTER) // Ll
@@ -51,17 +51,17 @@ trait ScalaXMLParser extends ScalaScanner {
   val tagEnd = '>' as "tagEnd"
   val endTag = "</" as "endTag"
   
-  def debug(message : String) : Rule[Nothing] = token >> { t => s => println(message + " (next token: " + t + ")"); Failure }
+  def debug(message : String) : Parser[Nothing] = token >> { t => s => println(message + " (next token: " + t + ")"); Failure }
   
   lazy val xmlExpr = skip -~ (xmlElement  | cDataSect | pi +) ^^ NodeList as "xmlExpr"
   lazy val xmlElement = startElement -~ elementName ~ (attribute*) ~- (xmlS?) >~> xmlElementRest
-  def xmlElementRest(name : String, attributes : List[Attribute]) : Rule[XMLElement] = (emptyElement
+  def xmlElementRest(name : String, attributes : List[Attribute]) : Parser[XMLElement] = (emptyElement
       | tagEnd -~ (xmlContent  ^^ Some[Expression]) ~- endElement(name)) ^^ XMLElement(name, attributes)
   def endElement(name : String) = (endTag -~ elementName ~- (xmlS?) ~- tagEnd) filter (_ == name)
-  lazy val xmlContent : Rule[Expression] = (xmlElement | xmlComment | charData | scalaExpr  | cDataSect | pi | entityRef *) ^^ NodeList
+  lazy val xmlContent : Parser[Expression] = (xmlElement | xmlComment | charData | scalaExpr  | cDataSect | pi | entityRef *) ^^ NodeList
 
   lazy val xmlPattern = skip -~ startElement -~ elementName ~- (xmlS?) >> xmlPatternRest as "xmlPattern"
-  def xmlPatternRest(name : String) : Rule[XMLPattern] = (emptyElement
+  def xmlPatternRest(name : String) : Parser[XMLPattern] = (emptyElement
       | tagEnd -~ xmlPatternContent ~- endElement(name)) ^^ XMLPattern(name)
   lazy val xmlPatternContent = (xmlPattern | xmlComment | charData | scalaPattern | cDataSect | pi | entityRef *) ^^ NodeList ^^ Some[Expression]
 
@@ -70,7 +70,7 @@ trait ScalaXMLParser extends ScalaScanner {
   lazy val entityRef = '&' -~ xmlName ~- ';' ^^ EntityRef
 
   val attributeName = xmlS -~ xmlName ~- '=' as "attributeName"
-  val attributeValue : Rule[Expression] = (quoted('"') | quoted('\'') as "attributeValue") | scalaExpr
+  val attributeValue : Parser[Expression] = (quoted('"') | quoted('\'') as "attributeValue") | scalaExpr
   def quoted(ch : Char) = ch -~ (resolvedReference | anyChar - choice("<&")) *~- ch ^^ toString ^^ StringLiteral
   
   val attribute = attributeName ~ attributeValue ^~^ Attribute

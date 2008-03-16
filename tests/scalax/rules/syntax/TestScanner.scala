@@ -12,20 +12,21 @@
 
 package scalax.rules.syntax.test
 
-trait TestScanner extends StateRules {
+trait TestScanner extends Rules {
+  type S
 
   def input(string : String) : S
   
   def remaining(s : S) : String
   
-  def checkSuccess[A](input : String, result : Result[A], expected : A) {
+  def checkSuccess[A](input : String, result : Result[S, A, Nothing], expected : A) {
     result match {
       case Success(restm, actual) if actual == expected => ()
       case actual => fail(input, actual, expected, "")
     }
   }
   
-  def check[A](input : String, actual : Result[A], expected : A, rest : String) {
+  def check[A](input : String, actual : Result[S, A, Nothing], expected : A, rest : String) {
     actual match {
       case Success(es, ea) => if (ea != expected && !remaining(es).equals(rest)) 
         fail(input, actual, expected, rest)
@@ -33,7 +34,7 @@ trait TestScanner extends StateRules {
     }
   }
   
-  def fail[A](input : String, actual : Result[A], expected : A, rest : String) {
+  def fail[A](input : String, actual : Result[S, A, Nothing], expected : A, rest : String) {
     actual match {
       case Success(s, result) =>  error ("Input: " + input + 
         "\nExpected success: " + expected + 
@@ -47,7 +48,7 @@ trait TestScanner extends StateRules {
     }
   }
   
-  def checkFailure[A](rule : Rule[A])(inputs : String *) {
+  def checkFailure[A](rule : Rule[S, S, A, Nothing])(inputs : String *) {
     for (string <- inputs) {
       rule(input(string)) match {
         case Failure => ()
@@ -58,13 +59,13 @@ trait TestScanner extends StateRules {
     }
   }
   
-  def checkRule[A](rule : Rule[A])(expect : (String, A) *) {
+  def checkRule[A](rule : Rule[S, S, A, Nothing])(expect : (String, A) *) {
     for ((string, result) <- expect) {
       checkSuccess(string, rule(input(string)), result)
     }
   }
   
-  def checkRuleWithRest[A](rule : Rule[A])(expect : ((String, A), String) *) {
+  def checkRuleWithRest[A](rule : Rule[S, S, A, Nothing])(expect : ((String, A), String) *) {
     for (((string, result), rest) <- expect) {
       check(string, rule(input(string)), result, rest)
     }

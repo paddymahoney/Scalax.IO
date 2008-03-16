@@ -17,6 +17,7 @@ import java.io.{BufferedReader, File, FileReader, Reader}
 
 object ReadFiles extends SimpleScalaParser with Application {
   //DefaultMemoisable.debug = true
+  //process(new File("../scala-trunk/src/compiler/scala/tools/nsc/backend/icode/Opcodes.scala"))
   
   //process(new File("src/scalax/rules"))
   process(new File("../scala-trunk/src/compiler"))

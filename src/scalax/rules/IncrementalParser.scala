@@ -12,12 +12,12 @@
 
 package scalax.rules
 
-trait IncrementalScanner extends IncrementalParser[Char] with Scanner
-
-trait IncrementalParser[A] extends Parser[A] with MemoisableRules {
+trait IncrementalParsers[A] extends Parsers[A] with MemoisableRules {
   type S = IncrementalInput[A]
   val item = from[S] { _ next }
 }
+
+trait IncrementalScanners extends IncrementalParsers[Char] with Scanners
 
 class IncrementalInput[A]
     extends Input[A] 
