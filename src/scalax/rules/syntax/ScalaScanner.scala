@@ -63,6 +63,8 @@ case class Comment(text : String) extends Token
 
 case object NewLineToken extends Token
 
+case class SyntaxError(message : String)
+
 import ScalaScanner._
 import Character._
 
@@ -73,15 +75,20 @@ import Character._
  * based on Scala Language Specification.
 */
 trait ScalaScanner extends Scanners with MemoisableRules {
+  type X = SyntaxError
   
   def newlineAllowed : Parser[Any]
   
   implicit def symbolToId(symbol : Symbol) : Parser[Token] = otherToken ?? { case ReservedId(symbol.name) => }
+  
+  def syntaxError(message : String) : Parser[Nothing] = error(SyntaxError(message))
 
   lazy val token : Parser[Token] = nl | otherToken
   lazy val otherToken : Parser[Token] = skip -~ (literal | delimiter | id) as "otherToken"
-  lazy val skip = space | comment | newline *
-  
+
+  lazy val skip = space | newline | comment *
+  lazy val space = choice(" \t")
+    
   lazy val nl : Parser[Token] = for {
     _ <- newlineAllowed;
     _ <- space | comment *;
@@ -116,11 +123,11 @@ trait ScalaScanner extends Scanners with MemoisableRules {
   lazy val reservedId = (plainId filter isReserved) ^^ ReservedId
         
   // note multi-line comments can nest
-  lazy val multiLineComment : Parser[String] = ("/*" -~ (multiLineComment | anyChar) *~- "*/") ^^ toString
-  lazy val singleLineComment : Parser[String] = "//" -~ (item - newline *) ^^ toString
   lazy val comment = (singleLineComment | multiLineComment) ^^ Comment as "comment"
-    
-  
+  lazy val singleLineComment : Parser[String] = "//" -~ (item - newline *) ^^ toString
+  lazy val multiLineComment : Parser[String] = 
+      "/*" -~ (((multiLineComment | anyChar) *~- "*/") ^^ toString | syntaxError("Unterminated comment"))
+
   lazy val literal : Parser[LiteralToken[Any]] = 
       plainId ^^? {
         case "null" => LiteralToken(null)
@@ -135,10 +142,12 @@ trait ScalaScanner extends Scanners with MemoisableRules {
   
   lazy val charElement = charEscapeSeq | printableChar
   lazy val characterLiteral = '\'' -~ (charElement - '\'') ~- '\'' ^^ LiteralToken[Char]
-  lazy val stringLiteral = ("\"\"\"" -~ anyChar *~- "\"\"\"" | '\"' -~ charElement *~- '\"') ^^ toString ^^ LiteralToken[String]
+
+  lazy val stringLiteral = (tripleQuotedString | singleQuotedString) ^^ LiteralToken[String]
+  lazy val tripleQuotedString = "\"\"\"" -~ (anyChar *~- "\"\"\"" | syntaxError("Unterminated string")) ^^ toString
+  lazy val singleQuotedString = '\"' -~ (charElement *~- '\"' | syntaxError("Unterminated string")) ^^ toString
+  
   lazy val symbolLiteral = '\'' -~ plainId ^^ Symbol ^^ LiteralToken[Symbol]
-    
-  lazy val space = choice(" \t")
     
   val decimalDigit = ('0' to '9') ^^ (_ - 48L)
   val octalDigit = decimalDigit.filter(_ < 8)

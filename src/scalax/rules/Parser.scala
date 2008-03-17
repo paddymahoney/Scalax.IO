@@ -17,8 +17,9 @@ package scalax.rules
  */
 trait Parsers[T] extends RulesWithState {
   
-  type Parser[A] = Rule[A, Nothing]
-    
+  type X
+  type Parser[+A] = Rule[A, X]
+  
   /** Succeeds with the first element of the input unless input is empty. */
   def item : Parser[T]
 
@@ -50,6 +51,7 @@ trait Scanners extends Parsers[Char] {
 
 trait StringScanners extends Scanners {
   type S = String
+  type X = Nothing
     
   val item = from[String] { 
     case "" => Failure

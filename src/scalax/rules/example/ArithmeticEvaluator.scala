@@ -29,7 +29,7 @@ object ExampleUsage extends ArithmeticEvaluator with StringScanners with Applica
 
 
 object ExampleUsage2 extends ArithmeticEvaluator with IncrementalScanners with Application {
-  
+  type X = Nothing
   DefaultMemoisable.debug = true
   
   // set up initial text and evaluate

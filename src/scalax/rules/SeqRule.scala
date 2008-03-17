@@ -15,24 +15,27 @@ package scalax.rules
 class SeqRule[S, +A, +X](rule : Rule[S, S, A, X]) {
   import rule.factory._
 
-  def ? = from[S] { 
-    in => rule(in) match {
-      case Success(out, a) => Success(out, Some(a))
-      case _ => Success(in, None)
-    }
+  def ? = rule mapRule { 
+    case Success(out, a) => in : S => Success(out, Some(a))
+    case Failure => in : S => Success(in, None)
+    case err @ Error(_) => in : S => err
   }
-
+  
   /** Creates a rule that always succeeds with a Boolean value.  
    *  Value is 'true' if this rule succeeds, 'false' otherwise */
   def -? = ? map { _ isDefined }
         
   def * = from[S] { 
     // tail-recursive function with reverse list accumulator
-    def rep(in : S, acc : List[A]) : (S, List[A]) = rule(in) match {
+    def rep(in : S, acc : List[A]) : (S, List[A], Option[X]) = rule(in) match {
        case Success(out, a) => rep(out, a :: acc)
-       case _ => (in, acc)
+       case Failure => (in, acc.reverse, None)
+       case Error(x) => (in, acc, Some(x))
     }
-    in => rep(in, Nil) match { case (out, list) => Success(out, list.reverse) }
+    in => rep(in, Nil) match { 
+      case (out, list, None) => Success(out, list.reverse)
+      case (_, _, Some(x)) => Error(x)
+    }
   }
   
   def + = rule ~++ *
@@ -44,12 +47,12 @@ class SeqRule[S, +A, +X](rule : Rule[S, S, A, X]) {
   }
   
   /** Repeats this rule one or more times with a separator (which is discarded) */
-  def +/(sep : => Rule[S, S, Any, Any]) = rule ~++ (sep -~ rule *)
+  def +/[X2 >: X](sep : => Rule[S, S, Any, X2]) = rule ~++ (sep -~ rule *)
 
   /** Repeats this rule zero or more times with a separator (which is discarded) */
-  def */(sep : => Rule[S, S, Any, Any]) = +/(sep) | state[S].nil
+  def */[X2 >: X](sep : => Rule[S, S, Any, X2]) = +/(sep) | state[S].nil
   
-  def *~-[Out, Y](end : => Rule[S, Out, Any, Y]) = (rule - end *) ~- end
+  def *~-[Out, X2 >: X](end : => Rule[S, Out, Any, X2]) = (rule - end *) ~- end
   def +~-[Out, X2 >: X](end : => Rule[S, Out, Any, X2]) = (rule - end +) ~- end
 
 }

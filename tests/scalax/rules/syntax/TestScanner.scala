@@ -19,14 +19,14 @@ trait TestScanner extends Rules {
   
   def remaining(s : S) : String
   
-  def checkSuccess[A](input : String, result : Result[S, A, Nothing], expected : A) {
+  def checkSuccess[A](input : String, result : Result[S, A, Any], expected : A) {
     result match {
       case Success(restm, actual) if actual == expected => ()
       case actual => fail(input, actual, expected, "")
     }
   }
   
-  def check[A](input : String, actual : Result[S, A, Nothing], expected : A, rest : String) {
+  def check[A](input : String, actual : Result[S, A, Any], expected : A, rest : String) {
     actual match {
       case Success(es, ea) => if (ea != expected && !remaining(es).equals(rest)) 
         fail(input, actual, expected, rest)
@@ -34,7 +34,7 @@ trait TestScanner extends Rules {
     }
   }
   
-  def fail[A](input : String, actual : Result[S, A, Nothing], expected : A, rest : String) {
+  def fail[A](input : String, actual : Result[S, A, Any], expected : A, rest : String) {
     actual match {
       case Success(s, result) =>  error ("Input: " + input + 
         "\nExpected success: " + expected + 
@@ -48,7 +48,7 @@ trait TestScanner extends Rules {
     }
   }
   
-  def checkFailure[A](rule : Rule[S, S, A, Nothing])(inputs : String *) {
+  def checkFailure[A](rule : Rule[S, S, A, Any])(inputs : String *) {
     for (string <- inputs) {
       rule(input(string)) match {
         case Failure => ()
@@ -59,13 +59,13 @@ trait TestScanner extends Rules {
     }
   }
   
-  def checkRule[A](rule : Rule[S, S, A, Nothing])(expect : (String, A) *) {
+  def checkRule[A](rule : Rule[S, S, A, Any])(expect : (String, A) *) {
     for ((string, result) <- expect) {
       checkSuccess(string, rule(input(string)), result)
     }
   }
   
-  def checkRuleWithRest[A](rule : Rule[S, S, A, Nothing])(expect : ((String, A), String) *) {
+  def checkRuleWithRest[A](rule : Rule[S, S, A, Any])(expect : ((String, A), String) *) {
     for (((string, result), rest) <- expect) {
       check(string, rule(input(string)), result, rest)
     }
