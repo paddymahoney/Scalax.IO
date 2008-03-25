@@ -21,7 +21,7 @@ The Scala Community Library (Scalax) is a nascent project to develop a general u
     </license>
   </licenses>
   <properties>
-    <scala.version>2.7.0-rc2</scala.version>
+    <scala.version>2.7.0</scala.version>
     <java.src.version>1.5</java.src.version>
   </properties>
   <repositories>
