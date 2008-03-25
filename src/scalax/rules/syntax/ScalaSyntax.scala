@@ -35,6 +35,7 @@ case object EmptyStatement extends Statement
 
 trait Expression extends Statement
 
+/*
 trait Literal extends Expression
 
 case object Null extends Literal
@@ -48,7 +49,7 @@ case class IntegerLiteral(value : Int) extends Literal
 case class LongLiteral(value : Long) extends Literal
 case class FloatLiteral(value : Float) extends Literal
 case class DoubleLiteral(value : Double) extends Literal
-
+*/
 
 abstract class PathElement extends Expression
 

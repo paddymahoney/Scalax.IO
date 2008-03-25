@@ -71,7 +71,7 @@ trait ScalaXMLParser extends ScalaScanner {
 
   val attributeName = xmlS -~ xmlName ~- '=' as "attributeName"
   val attributeValue : Parser[Expression] = (quoted('"') | quoted('\'') as "attributeValue") | scalaExpr
-  def quoted(ch : Char) = ch -~ (resolvedReference | anyChar - choice("<&")) *~- ch ^^ toString ^^ StringLiteral
+  def quoted(ch : Char) = positioned(ch -~ (resolvedReference | anyChar - choice("<&")) *~- ch ^^ toString ^^ lit[String])
   
   val attribute = attributeName ~ attributeValue ^~^ Attribute
   val charData = ("{{" -^ '{' | resolvedReference | anyChar - ("]]>" | '{' | '<' | '&') +) ^^ toString ^^ TextNode

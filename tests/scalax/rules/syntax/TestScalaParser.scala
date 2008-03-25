@@ -13,6 +13,8 @@
 package scalax.rules.syntax.test
 
 object TestScalaParser extends SimpleScalaParser with TestScanner {
+  def Literal[T](value : T) = syntax.Literal(value)(NoPosition)
+  
   DefaultMemoisable.debug = true
   
   def remaining(input : Input#State) = input.chars.drop(input.index).mkString("")
@@ -50,7 +52,7 @@ checkRule(typeSpec)(
     "A @annot" -> AnnotatedType(TypeDesignator(List(), "A"), List(Annotation(TypeDesignator(List(), "annot"), List(), List()))),
     
     """A @annot("Yo!") { val name = "Fred" }""" -> AnnotatedType(TypeDesignator(List(), "A"), List(
-        Annotation(TypeDesignator(List(), "annot"), List(List(StringLiteral("Yo!"))), List(("name", StringLiteral("Fred"))))))
+        Annotation(TypeDesignator(List(), "annot"), List(List(Literal("Yo!"))), List(("name", Literal("Fred"))))))
  )
  
  checkRule(dcl)(
@@ -91,51 +93,51 @@ checkRule(typeSpec)(
      )
      
      checkRule(expr)(
-         "\"string\"" -> StringLiteral("string"),
-         "'symbol" -> SymbolLiteral('symbol),
+         "\"string\"" -> Literal("string"),
+         "'symbol" -> Literal('symbol),
          "_" -> Underscore,
-         "(1, 2, )" -> TupleExpression(List(IntegerLiteral(1), IntegerLiteral(2))),
-         "1 .toString" -> DotExpression(IntegerLiteral(1), Name("toString")),
+         "(1, 2, )" -> TupleExpression(List(Literal(1), Literal(2))),
+         "1 .toString" -> DotExpression(Literal(1), Name("toString")),
          
          "a[B, C]" -> ExpressionTypeArgs(Name("a"),
              List(TypeDesignator(List(), "B"), TypeDesignator(List(), "C"))),
              
-         "a(1, 2)" -> ApplyExpression(Name("a"), List(IntegerLiteral(1), IntegerLiteral(2))),
+         "a(1, 2)" -> ApplyExpression(Name("a"), List(Literal(1), Literal(2))),
          
-         "if (a) 1 else 2" -> IfExpression(Name("a"),IntegerLiteral(1),Some(IntegerLiteral(2))),
+         "if (a) 1 else 2" -> IfExpression(Name("a"),Literal(1),Some(Literal(2))),
          
-         "while (true) println(\"Hello\")" -> WhileExpression(True, ApplyExpression(Name("println"),List(StringLiteral("Hello")))),
+         "while (true) println(\"Hello\")" -> WhileExpression(Literal(true), ApplyExpression(Name("println"),List(Literal("Hello")))),
          
-         "do println(\"Hello\") while(true)" -> DoExpression(ApplyExpression(Name("println"),List(StringLiteral("Hello"))), True),
+         "do println(\"Hello\") while(true)" -> DoExpression(ApplyExpression(Name("println"),List(Literal("Hello"))), Literal(true)),
          
          "throw x" -> Throw(Name("x")),
          "return x" -> Return(Some(Name("x"))),
          "return" -> Return(None),
          
          "try { 1 } catch { case e => println(e) } finally { println(\"finally!\") }" -> TryCatchFinally(
-             Block(List(), Some(IntegerLiteral(1))),
+             Block(List(), Some(Literal(1))),
              Some(CaseClauses(List(
                  CaseClause(VariablePattern("e"), None, Block(List(),
                      Some(ApplyExpression(Name("println"), List(Name("e"))))))))),
-             Some(Block(List(), Some(ApplyExpression(Name("println"),List(StringLiteral("finally!"))))))),
+             Some(Block(List(), Some(ApplyExpression(Name("println"),List(Literal("finally!"))))))),
              
           "for (i <- list; val j = i; if true) yield j" -> ForComprehension(List(
               Generator(VariablePattern("i"), Name("list"), None), 
               ValEnumerator(VariablePattern("j"), Name("i")), 
-              Guard(True)), 
+              Guard(Literal(true))), 
               true, Name("j")),
               
-          "a = 1" -> SimpleAssignment("a",IntegerLiteral(1)),
+          "a = 1" -> SimpleAssignment("a",Literal(1)),
           
-          "a.b = 1" -> DotAssignment(Name("a"), "b", IntegerLiteral(1)),
+          "a.b = 1" -> DotAssignment(Name("a"), "b", Literal(1)),
           
-          "a(b) = 1" -> Update(Name("a"), List(Name("b")), IntegerLiteral(1)),
+          "a(b) = 1" -> Update(Name("a"), List(Name("b")), Literal(1)),
           
           "a b" -> PostfixExpression(Name("a"),"b"),
           
-          "1 + 2 * 3" -> InfixExpression("+", IntegerLiteral(1), InfixExpression("*", IntegerLiteral(2), IntegerLiteral(3))),
+          "1 + 2 * 3" -> InfixExpression("+", Literal(1), InfixExpression("*", Literal(2), Literal(3))),
           
-          "-1" -> PrefixExpression("-", IntegerLiteral(1)),
+          "-1" -> PrefixExpression("-", Literal(1)),
           
           "a _" -> Unapplied(Name("a")),
           
@@ -144,10 +146,10 @@ checkRule(typeSpec)(
           "new Y(1, 2) { val y = 3 }" -> InstanceCreation(ClassTemplate(
               None,
               Some(TypeDesignator(List(),"Y")),
-              List(List(IntegerLiteral(1), IntegerLiteral(2))),
+              List(List(Literal(1), Literal(2))),
               List(),
               Some(TemplateBody(None, None,
-                  List(AnnotatedDefinition(List(),List(),ValPatternDefinition(List(VariablePattern("y")),None,IntegerLiteral(3)))))))),
+                  List(AnnotatedDefinition(List(),List(),ValPatternDefinition(List(VariablePattern("y")),None,Literal(3)))))))),
                   
           """a match {
             case x : A
@@ -162,19 +164,19 @@ checkRule(typeSpec)(
 
          "<foo bar='123' baz={456}><!--comment-->Some text{\"Hello XML\"}<empty/>&lt;notelement&gt;</foo>" -> NodeList(List(
              XMLElement("foo", List(
-                 Attribute("bar",StringLiteral("123")), 
-                 Attribute("baz",IntegerLiteral(456))))(
+                 Attribute("bar",Literal("123")), 
+                 Attribute("baz",Literal(456))))(
                  Some(NodeList(List(
                      XMLComment("comment"), 
                      TextNode("Some text"), 
-                     StringLiteral("Hello XML"), 
+                     Literal("Hello XML"), 
                      XMLElement("empty",List())(None),
                      TextNode("<notelement>")))))))
          )
      
      checkRule(pattern)(
          "_" -> Underscore,
-         "1" -> IntegerLiteral(1),
+         "1" -> Literal(1),
          "x" -> VariablePattern("x"),
          "X" -> Name("X"), //StableIdPattern(List(Name("X")), None, false),
          "x.y" -> DotExpression(Name("x"),Name("y")), //StableIdPattern(List(Name("x"), Name("y")), None, false),
@@ -185,7 +187,7 @@ checkRule(typeSpec)(
          "a @ (x, y)" -> AtPattern("a",TupleExpression(List(VariablePattern("x"), VariablePattern("y")))),
          "a : A" -> TypedVariablePattern("a", TypeDesignator(List(), "A")),
          "_ : A" -> TypePattern(TypeDesignator(List(), "A")),
-         "1 | 2" -> OrPattern(IntegerLiteral(1), IntegerLiteral(2))
+         "1 | 2" -> OrPattern(Literal(1), Literal(2))
      )
      
   checkRule(compilationUnit)("""
@@ -199,10 +201,10 @@ checkRule(typeSpec)(
         AnnotatedDefinition(List(),List(),ClassDefinition(false, "Hello",None,List(),None, List(), None,
             ClassTemplate(None,None,List(),List(),Some(TemplateBody(None,None,List(
                 AnnotatedDefinition(List(),List(),ProcedureDefinition("hello",None,List(List()),None,
-                    Block(List(), Some(ApplyExpression(Name("println"),List(StringLiteral("Hello World")))))))))))))))
+                    Block(List(), Some(ApplyExpression(Name("println"),List(Literal("Hello World")))))))))))))))
   )
     
-  
+  /*
   checkRule(scanner.unicodeEscape)("\\u0030" -> '0', "\\u21D2" -> '\u21D2')
   checkRule(scanner.octalEscape)("\\061" -> '1')
   checkRule(scanner.anyChar)("\\u0030" -> '0', "\\u21D2" -> '\u21D2')
@@ -211,10 +213,10 @@ checkRule(typeSpec)(
   checkFailure(scanner.integerLiteral)("l", "L", "0x")
   
   checkRuleWithRest(scanner.integerLiteral) (
-      "0l" -> LiteralToken(0) -> "",
-      "12 " -> LiteralToken(12) -> " ",
-      "012" -> LiteralToken(10) -> "",
-      "0x12" -> LiteralToken(18) -> "")
+      "0l" -> Literal(0) -> "",
+      "12 " -> Literal(12) -> " ",
+      "012" -> Literal(10) -> "",
+      "0x12" -> Literal(18) -> "")
       
   checkFailure(scanner.opChar)(".", ";", "(", "[", "}")
   
@@ -240,14 +242,16 @@ checkRule(typeSpec)(
       "`\\u21D2`" -> "\u21D2")
 
   checkRule(scanner.floatLiteral)(
-      "1f" -> LiteralToken(1), 
-      "1.0F" -> LiteralToken(1), 
-      "1.e2F" -> LiteralToken(100),
-      ".12E3f" -> LiteralToken(.12E3f),
-      "1D" -> LiteralToken(1), 
-      "1.0" -> LiteralToken(1), 
-      "1e2" -> LiteralToken(100),
-      ".12E3D" -> LiteralToken(.12E3))
+      "1f" -> Literal(1), 
+      "1.0F" -> Literal(1), 
+      "1.e2F" -> Literal(100),
+      ".12E3f" -> Literal(.12E3f),
+      "1D" -> Literal(1), 
+      "1.0" -> Literal(1), 
+      "1e2" -> Literal(100),
+      ".12E3D" -> Literal(.12E3))
+  
+  */
       
   println("ScalaParser tests passed")
 }

@@ -43,25 +43,38 @@ object ScalaScanner {
   def canEndStatement(id : String) = endStatements.contains(id)
 }
 
-class Position {
-  
+abstract class Position
+case object NoPosition extends Position
+
+abstract class SomePosition extends Position {
+  def start : Int
+  def end : Int
+  def length = end - start
 }
 
-abstract class Token
+abstract class Token {
+  def pos : Position
+}
 
 abstract class NameToken extends Token {
   def name : String
 }
-case class ReservedId(name : String) extends NameToken
-case class QuoteId(name : String) extends NameToken
-case class PlainId(name : String) extends NameToken
-case class Delimiter(delim : Char) extends Token
 
-case class LiteralToken[+T](value : T) extends Token with Literal
+case class ReservedId(name : String)(val pos : Position) extends NameToken
+case class QuoteId(name : String)(val pos : Position) extends NameToken
+case class PlainId(name : String)(val pos : Position) extends NameToken
+case class Delimiter(delim : Char)(val pos : Position) extends Token
 
-case class Comment(text : String) extends Token
+case class Literal[+T](value : T)(val pos : Position) extends Token with Expression
 
-case object NewLineToken extends Token
+case class Comment(text : String)(val pos : Position) extends Token
+
+case object NewLineToken extends Token {
+  def pos = NoPosition
+}
+
+
+
 
 case class SyntaxError(message : String)
 
@@ -78,14 +91,24 @@ trait ScalaScanner extends Scanners with MemoisableRules {
   type X = SyntaxError
   
   def newlineAllowed : Parser[Any]
+  def pos : Parser[() => Int]
   
   implicit def symbolToId(symbol : Symbol) : Parser[Token] = otherToken ?? { case ReservedId(symbol.name) => }
   
   def syntaxError(message : String) : Parser[Nothing] = error(SyntaxError(message))
 
   lazy val token : Parser[Token] = nl | otherToken
-  lazy val otherToken : Parser[Token] = skip -~ (literal | delimiter | id) as "otherToken"
+  lazy val otherToken : Parser[Token] = skip -~ positioned(literal | delimiter | id) as "otherToken"
 
+  
+  
+  def positioned[T](r : Parser[Position => T]) : Parser[T] = pos ~ r ~ pos ^^ { 
+    case p1 ~ f ~ p2 => f(new Position { 
+      def start = p1()
+      def end = p2()
+    })
+  }
+  
   lazy val skip = space | newline | comment *
   lazy val space = choice(" \t")
     
@@ -98,7 +121,7 @@ trait ScalaScanner extends Scanners with MemoisableRules {
 
   lazy val startStatement = 'case ~ ('class | 'object) | otherToken ?? {
     case Delimiter('(' | '{') =>
-    case LiteralToken(_) =>
+    case Literal(_) =>
     case QuoteId(_) =>
     case PlainId(_) =>
     case ReservedId(name) if canStartStatement(name) =>
@@ -106,7 +129,7 @@ trait ScalaScanner extends Scanners with MemoisableRules {
     
   def canEndStatement(token : Token) = token match {
     case Delimiter('}' | ')' | ']') => true
-    case LiteralToken(_) => true
+    case Literal(_) => true
     case ReservedId(name) => ScalaScanner.canEndStatement(name)
     case QuoteId(_) => true
     case PlainId(_) => true
@@ -114,25 +137,27 @@ trait ScalaScanner extends Scanners with MemoisableRules {
     case _ => false
   }
   
-  lazy val delimiter : Parser[Delimiter] = choice("(){}[];,.") ^^ Delimiter
+  lazy val delimiter : Parser[Position => Delimiter] = choice("(){}[];,.") ^^ { ch => Delimiter(ch) }
 
-  lazy val id = quoteId | reservedId | plainId ^^ PlainId
+  lazy val id : Parser[Position => NameToken] = quoteId | reservedId | plainId ^^ { name => PlainId(name) }
     
-  lazy val quoteId = '`' -~ (printableChar +~- '`') ^^ toString ^^ QuoteId
+  lazy val quoteId : Parser[Position => NameToken] = '`' -~ (printableChar +~- '`') ^^ toString ^^ { name => QuoteId(name) }
   lazy val plainId = (letter ~++ idRest | (opChar+)) ^^ toString as "plainId"
-  lazy val reservedId = (plainId filter isReserved) ^^ ReservedId
+  lazy val reservedId : Parser[Position => NameToken] = (plainId filter isReserved) ^^ { name => ReservedId(name) }
         
   // note multi-line comments can nest
-  lazy val comment = (singleLineComment | multiLineComment) ^^ Comment as "comment"
+  lazy val comment = positioned((singleLineComment | multiLineComment) ^^ { text => Comment(text) _ }) as "comment"
   lazy val singleLineComment : Parser[String] = "//" -~ (item - newline *) ^^ toString
   lazy val multiLineComment : Parser[String] = 
       "/*" -~ (((multiLineComment | anyChar) *~- "*/") ^^ toString | syntaxError("Unterminated comment"))
 
-  lazy val literal : Parser[LiteralToken[Any]] = 
+  def lit[T](value : T) : Position => Literal[T] = Literal(value)
+  
+  lazy val literal : Parser[Position => Literal[Any]] = 
       plainId ^^? {
-        case "null" => LiteralToken(null)
-        case "true" => LiteralToken(true)
-        case "false" => LiteralToken(false)
+        case "null" => lit(null)
+        case "true" => lit(true)
+        case "false" => lit(false)
       } |
       characterLiteral |
       stringLiteral |
@@ -141,13 +166,13 @@ trait ScalaScanner extends Scanners with MemoisableRules {
       integerLiteral
   
   lazy val charElement = charEscapeSeq | printableChar
-  lazy val characterLiteral = '\'' -~ (charElement - '\'') ~- '\'' ^^ LiteralToken[Char]
+  lazy val characterLiteral = '\'' -~ (charElement - '\'') ~- '\'' ^^ lit[Char]
 
-  lazy val stringLiteral = (tripleQuotedString | singleQuotedString) ^^ LiteralToken[String]
+  lazy val stringLiteral = (tripleQuotedString | singleQuotedString) ^^ lit[String]
   lazy val tripleQuotedString = "\"\"\"" -~ (anyChar *~- "\"\"\"" | syntaxError("Unterminated string")) ^^ toString
   lazy val singleQuotedString = '\"' -~ (charElement *~- '\"' | syntaxError("Unterminated string")) ^^ toString
   
-  lazy val symbolLiteral = '\'' -~ plainId ^^ Symbol ^^ LiteralToken[Symbol]
+  lazy val symbolLiteral = '\'' -~ plainId ^^ { name => lit(Symbol(name)) }
     
   val decimalDigit = ('0' to '9') ^^ (_ - 48L)
   val octalDigit = decimalDigit.filter(_ < 8)
@@ -175,14 +200,13 @@ trait ScalaScanner extends Scanners with MemoisableRules {
   val opChar = unicode(MATH_SYMBOL) | unicode(OTHER_SYMBOL) | choice("!#%&*+-/:<=>?@\\^|~")
   lazy val idRest : Parser[List[Char]] = ('_' ~++ (opChar+)) ~- !idChar | !idChar -^ Nil | idChar ~++ idRest
     
-  val nonZero = decimalDigit filter (_ > 0)
   val hexNumeral = "0x" -~ hexDigit ~>* hex
   val octalNumeral = '0' -~ octalDigit ~>* oct
   val decimalNumeral = !'0' -~ decimalDigit ~>* dec | '0' -^ 0L
     
   val integerLiteral = (hexNumeral | octalNumeral | decimalNumeral) ~ (choice("Ll")-?) ~- !idChar ^^ {
-    case value ~ false => LiteralToken(value.asInstanceOf[Int])
-    case value ~ true => LiteralToken(value)
+    case value ~ false => lit(value.asInstanceOf[Int])
+    case value ~ true => lit(value)
   }
     
   val intPart = decimalNumeral ^^ (_ toString) | ""
@@ -192,7 +216,7 @@ trait ScalaScanner extends Scanners with MemoisableRules {
   val floatLiteral = intPart ~ floatPart ~ exponentPart ~ (letter ~++ idRest ^^ toString ?) >>? {
     case "" ~ ("" | ".") ~ _ ~ _ => failure // have to have at least one digit
     case _ ~ "" ~ "" ~ None => failure // it's an integer
-    case i ~ f ~ e ~ Some("F" | "f") => unit(LiteralToken((i + f + e).toFloat))
-    case i ~ f ~ e ~ (Some("D" | "d") | None)  => unit(LiteralToken((i + f + e).toDouble))
+    case i ~ f ~ e ~ Some("F" | "f") => unit(lit((i + f + e).toFloat))
+    case i ~ f ~ e ~ (Some("D" | "d") | None)  => unit(lit((i + f + e).toDouble))
   }
 }

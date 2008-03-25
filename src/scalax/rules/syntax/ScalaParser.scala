@@ -33,6 +33,9 @@ trait ScalaParser extends Parsers[Token] with MemoisableRules {
   
   object scanner extends ScalaXMLParser {
     type S = ScalaParser.this.S
+    
+    val pos = position
+    
     lazy val item = nextChar
     lazy val newlineAllowed = multipleStatementsAllowed -~ lastTokenCanEndStatement
     
@@ -51,7 +54,7 @@ trait ScalaParser extends Parsers[Token] with MemoisableRules {
   def canEndStatement(token : Token) = lastTokenCanEndStatement(scanner.canEndStatement(token)) -^ token
   
   lazy val nl : SyntaxRule[Token] = NewLineToken
-  lazy val literal : SyntaxRule[Literal] = item ^^? { case l : Literal => l } as "literal"
+  lazy val literal : SyntaxRule[Literal[_]] = item ^^? { case l : Literal[_] => l } as "literal"
   lazy val quoteId : SyntaxRule[String] = item ^^? { case QuoteId(name) => name }
   lazy val plainId : SyntaxRule[String] = item ^^? { case PlainId(name) => name }
   lazy val id = quoteId | plainId as "id"
@@ -113,8 +116,7 @@ trait ScalaParser extends Parsers[Token] with MemoisableRules {
     case Nil => true
   }
   
-  //lazy val id = quoteId | plainId
-  lazy val varId = id filter { id => id.charAt(0) isLowerCase }
+  lazy val varId = plainId filter { id => id.charAt(0) isLowerCase }
   lazy val rightOp = id filter { id => id.endsWith(":") }
     
   lazy val infixType : SyntaxRule[Type] = rightAssociativeInfixType | compoundType >> optInfixType
