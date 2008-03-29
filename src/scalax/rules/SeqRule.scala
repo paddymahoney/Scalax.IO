@@ -27,15 +27,12 @@ class SeqRule[S, +A, +X](rule : Rule[S, S, A, X]) {
         
   def * = from[S] { 
     // tail-recursive function with reverse list accumulator
-    def rep(in : S, acc : List[A]) : (S, List[A], Option[X]) = rule(in) match {
+    def rep(in : S, acc : List[A]) : Result[S, List[A], X] = rule(in) match {
        case Success(out, a) => rep(out, a :: acc)
-       case Failure => (in, acc.reverse, None)
-       case Error(x) => (in, acc, Some(x))
+       case Failure => Success(in, acc.reverse)
+       case err : Error[_] => err
     }
-    in => rep(in, Nil) match { 
-      case (out, list, None) => Success(out, list)
-      case (_, _, Some(x)) => Error(x)
-    }
+    in => rep(in, Nil)
   }
   
   def + = rule ~++ *
