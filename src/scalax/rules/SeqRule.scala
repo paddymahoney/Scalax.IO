@@ -33,7 +33,7 @@ class SeqRule[S, +A, +X](rule : Rule[S, S, A, X]) {
        case Error(x) => (in, acc, Some(x))
     }
     in => rep(in, Nil) match { 
-      case (out, list, None) => Success(out, list.reverse)
+      case (out, list, None) => Success(out, list)
       case (_, _, Some(x)) => Error(x)
     }
   }

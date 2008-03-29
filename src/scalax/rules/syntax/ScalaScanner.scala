@@ -100,8 +100,6 @@ trait ScalaScanner extends Scanners with MemoisableRules {
   lazy val token : Parser[Token] = nl | otherToken
   lazy val otherToken : Parser[Token] = skip -~ positioned(literal | delimiter | id) as "otherToken"
 
-  
-  
   def positioned[T](r : Parser[Position => T]) : Parser[T] = pos ~ r ~ pos ^^ { 
     case p1 ~ f ~ p2 => f(new Position { 
       def start = p1()

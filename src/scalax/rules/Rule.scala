@@ -100,7 +100,7 @@ trait Rule[-In, +Out, +A, +X] extends (In => Result[Out, A, X]) {
   
   /** Creates a rule that suceeds only if this rule would fail on the given context. */
   def unary_! = mapRule[In, _ <: In, Unit, Nothing] { 
-    case Success(_, a) => in => Failure
+    case Success(_, _) => in => Failure
     case _ => in => Success(in, ())
   }
 
