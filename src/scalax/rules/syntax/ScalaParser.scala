@@ -70,8 +70,8 @@ trait ScalaParser extends Parsers[Token] with MemoisableRules {
   }
   implicit def charToTokenSeq(char : Char) = seqRule(charToToken(char))
 
-  def singleStatement[T](rule : Parser[T]) : Parser[T] = for (s <- multiple(false); t <- rule; _ <- multiple(s)) yield t
-  def multipleStatements[T](rule : Parser[T]) : Parser[T] = for (s <- multiple(true); t <- rule; _ <- multiple(s)) yield t
+  def singleStatement[T](rule : Parser[T]) = for (s <- multiple(false); t <- rule; _ <- multiple(s)) yield t
+  def multipleStatements[T](rule : Parser[T]) = for (s <- multiple(true); t <- rule; _ <- multiple(s)) yield t
 
   lazy val semi : Parser[Any] = (nl+) | ';' as "semi"
     
