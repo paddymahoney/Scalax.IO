@@ -20,7 +20,12 @@ object ReadFiles extends SimpleScalaParser with Application {
   //process(new File("../scala-trunk/src/compiler/scala/tools/nsc/backend/icode/Opcodes.scala"))
   
   //process(new File("src/scalax/rules"))
+  val start = System.currentTimeMillis
   process(new File("../scala-trunk/src/compiler"))
+  val end = System.currentTimeMillis
+  
+  println("Seconds: " + (end - start) / 1000.0)
+  
   
   def process(file : File) {
     if (file.isDirectory) file.listFiles().foreach(process)

@@ -13,7 +13,7 @@
 package scalax.rules.syntax.test
 
 object TestScalaParser extends SimpleScalaParser with TestScanner {
-  def Literal[T](value : T) = syntax.Literal(value)(NoPosition)
+  def Literal[T](value : T) = syntax.Literal(value)(null)
   
   DefaultMemoisable.debug = true
   
@@ -21,12 +21,6 @@ object TestScalaParser extends SimpleScalaParser with TestScanner {
 
   def input(string : String) = Input(string, 0)(true, false)
   
-  implicit def anyToElement[T](any : T) = new Element[T] {
-    val value = any
-    val start = 0
-    val length = 0
-  }
-
   def main(args : Array[String]) {
   //checkRule('this)("this" -> "this")
   
@@ -41,7 +35,7 @@ checkRule(typeSpec)(
     // why is this one so slow?
     "(A, )" -> TupleType(List(TypeDesignator(Nil, "A"))),
 
-    "A#B[C, D]" -> ParameterizedType(TypeProjection(TypeDesignator(Nil, "A"))("B"))(List(TypeDesignator(Nil, "C"), TypeDesignator(Nil, "D"))),
+    "A#B[C, D]" -> ParameterizedType(TypeProjection(TypeDesignator(Nil, "A"), "B"), List(TypeDesignator(Nil, "C"), TypeDesignator(Nil, "D"))),
     "A with B" -> CompoundType(TypeDesignator(Nil, "A"), List(TypeDesignator(Nil, "B")), None),
    "A => B" -> FunctionType(List(ParameterType(false, TypeDesignator(Nil, "A"), false)), TypeDesignator(Nil, "B")),
    "() => B" -> FunctionType(List(), TypeDesignator(List(), "B")),

@@ -37,6 +37,8 @@ class SeqRule[S, +A, +X](rule : Rule[S, S, A, X]) {
   
   def + = rule ~++ *
     
+  def ~>?[B >: A, X2 >: X](f : => Rule[S, S, B => B, X2]) = for (a <- rule; fs <- f?) yield fs.foldLeft[B](a) { (b, f) => f(b) }
+  
   def ~>*[B >: A, X2 >: X](f : => Rule[S, S, B => B, X2]) = for (a <- rule; fs <- f*) yield fs.foldLeft[B](a) { (b, f) => f(b) }
     
   def ~*~[B >: A, X2 >: X](join : => Rule[S, S, (B, B) => B, X2]) = {

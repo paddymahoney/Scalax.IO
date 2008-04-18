@@ -43,19 +43,17 @@ object ScalaScanner {
   def canEndStatement(id : String) = endStatements.contains(id)
 }
 
-abstract class Position
-case object NoPosition extends Position
-
-abstract class SomePosition extends Position {
+trait Position {
   def start : Int
   def end : Int
   def length = end - start
 }
 
-abstract class Token {
+trait Positioned {
   def pos : Position
 }
 
+abstract class Token
 abstract class NameToken extends Token {
   def name : String
 }
@@ -69,9 +67,7 @@ case class Literal[+T](value : T)(val pos : Position) extends Token with Express
 
 case class Comment(text : String)(val pos : Position) extends Token
 
-case object NewLineToken extends Token {
-  def pos = NoPosition
-}
+case object NewLineToken extends Token
 
 
 
@@ -101,10 +97,7 @@ trait ScalaScanner extends Scanners with MemoisableRules {
   lazy val otherToken : Parser[Token] = skip -~ positioned(literal | delimiter | id) as "otherToken"
 
   def positioned[T](r : Parser[Position => T]) : Parser[T] = pos ~ r ~ pos ^^ { 
-    case p1 ~ f ~ p2 => f(new Position { 
-      def start = p1()
-      def end = p2()
-    })
+    case p1 ~ f ~ p2 => f(new Position { def start = p1(); def end = p2() })
   }
   
   lazy val skip = space | newline | comment *
@@ -162,7 +155,7 @@ trait ScalaScanner extends Scanners with MemoisableRules {
       symbolLiteral |
       floatLiteral |
       integerLiteral
-  
+      
   lazy val charElement = charEscapeSeq | printableChar
   lazy val characterLiteral = '\'' -~ (charElement - '\'') ~- '\'' ^^ lit[Char]
 
