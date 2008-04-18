@@ -44,12 +44,23 @@ class FileExtras(file : File) {
 	
 	def appendOutputStream = OutputStreamResource.fileAppend(file)
 	
-	/** Obtains a FileChannel. */
-	def channel =
+	/** Obtains an input FileChannel. */
+	def inChannel =
 		new ManagedResource[FileChannel] {
 			type Handle = FileInputStream
 			def unsafeOpen() =
 				new FileInputStream(file)
+			def unsafeClose(s : Handle) =
+				s.close()
+			def translate(s : Handle) = s.getChannel
+		}
+	
+	/** Obtains an output FileChannel. */
+	def outChannel =
+		new ManagedResource[FileChannel] {
+			type Handle = FileOutputStream
+			def unsafeOpen() =
+				new FileOutputStream(file)
 			def unsafeClose(s : Handle) =
 				s.close()
 			def translate(s : Handle) = s.getChannel
@@ -128,8 +139,8 @@ object FileHelp {
 	/** Copies a file. */
 	def copy(src : File, dest : File) : Unit =
 		for {
-			in <- new FileExtras(src).channel
-			out <- new FileExtras(dest).channel
+			in <- new FileExtras(src).inChannel
+			out <- new FileExtras(dest).outChannel
 		} in.transferTo(0, in.size, out)
 
 	/** Moves a file, by rename if possible, otherwise by copy-and-delete. */
