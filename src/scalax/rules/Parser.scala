@@ -24,6 +24,7 @@ trait Parsers[T] extends RulesWithState {
   def item : Parser[T]
 
   implicit def elem(t : T) = item.filter(_ == t)
+  implicit def inElem(t : T) = inRule(elem(t))
 
   def readSeq[C <% Seq[T]](seq : C) = allOf(seq map elem) -^ seq
 

@@ -67,6 +67,7 @@ trait ScalaParser extends Parsers[Token] with MemoisableRules {
     case ReservedId(name) if name == char.toString => 
   }
   implicit def charToTokenSeq(char : Char) = seqRule(charToToken(char))
+  implicit def charToTokenIn(char : Char) = inRule(charToToken(char))
 
   def singleStatement[T](rule : Parser[T]) = for (s <- multiple(false); t <- rule; _ <- multiple(s)) yield t
   def multipleStatements[T](rule : Parser[T]) = for (s <- multiple(true); t <- rule; _ <- multiple(s)) yield t

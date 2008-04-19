@@ -39,10 +39,10 @@ trait Rule[-In, +Out, +A, +X] extends (In => Result[Out, A, X]) {
 
   def filter(f : A => Boolean) = flatMap { a => out => if(f(a)) Success(out, a) else Failure }
 
-  def orElse[In2 <: In, Out2 >: Out, A2 >: A, X2 >: X](other : => Rule[In2, Out2, A2, X2]) = mapRule { 
-    case s @ Success(_, _) => in : In2 => s
-    case Failure => in : In2 => other(in)
-    case err @ Error(_) => in : In2 => err
+  def orElse[Out2 >: Out, A2 >: A, X2 >: X](other : => Rule[_ >: In, Out2, A2, X2]) : Rule[In, Out2, A2, X2] = mapRule { 
+    case s @ Success(_, _) => in : In => s
+    case Failure => in : In => other(in)
+    case err @ Error(_) => in : In => err
   }
   
   def orError = orElse(error[In])
@@ -51,11 +51,11 @@ trait Rule[-In, +Out, +A, +X] extends (In => Result[Out, A, X]) {
     in : In => f(apply(in))
   }
   
-  def mapRule[In2 <: In, Out2, B, Y](f : Result[Out, A, X] => In2 => Result[Out2, B, Y]) = rule { 
-    in : In2 => f(apply(in))(in)
+  def mapRule[Out2, B, Y](f : Result[Out, A, X] => (_ >: In) => Result[Out2, B, Y]) : Rule[In, Out2, B, Y] = rule { 
+    in : In => f(apply(in))(in)
   }
 
-  def |[In2 <: In, Out2 >: Out, A2 >: A, X2 >: X](other : => Rule[In2, Out2, A2, X2]) = orElse(other)
+  def |[Out2 >: Out, A2 >: A, X2 >: X](other : => Rule[_ >: In, Out2, A2, X2]) = orElse(other)
 
   def ^^[B](fa2b : A => B) = map(fa2b)
   
@@ -98,19 +98,6 @@ trait Rule[-In, +Out, +A, +X] extends (In => Result[Out, A, X]) {
   
   def -~![Out2, B, X2 >: X](next : => Rule[Out, Out2, B, X2]) = for (a <- this; b <- next orError) yield b
   
-  /** Creates a rule that suceeds only if this rule would fail on the given context. */
-  def unary_! = mapRule[In, _ <: In, Unit, Nothing] { 
-    case Success(_, _) => in => Failure
-    case _ => in => Success(in, ())
-  }
-
-  /** Creates a rule that succeeds if this rule succeeds, but returns the original input. */
-  def & = mapRule[In, _ <: In, A, X] {
-    case Success(_, a) => in => Success(in, a)
-    case Failure => in => Failure
-    case err : Error[_] => in => err
-  }
-    
   def -[In2 <: In](exclude : => Rule[In2, Any, Any, Any]) = !exclude -~ this
       
   /** ^~^(f) is equivalent to ^^ { case b1 ~ b2 => f(b1, b2) } 

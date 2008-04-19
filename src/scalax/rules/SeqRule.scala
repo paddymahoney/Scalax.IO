@@ -12,6 +12,21 @@
 
 package scalax.rules
 
+class InRule[S, +A, +X](rule : Rule[S, Any, A, X]) {
+  /** Creates a rule that suceeds only if the original rule would fail on the given context. */
+  def unary_! : Rule[S, S, Unit, Nothing] = rule mapRule { 
+    case Success(_, _) => in : S => Failure
+    case _ => in : S => Success(in, ())
+  }
+
+  /** Creates a rule that succeeds if the original rule succeeds, but returns the original input. */
+  def & : Rule[S, S, A, X] = rule mapRule {
+    case Success(_, a) => in : S => Success(in, a)
+    case Failure => in : S => Failure
+    case err : Error[_] => in : S => err
+  }
+}
+
 class SeqRule[S, +A, +X](rule : Rule[S, S, A, X]) {
   import rule.factory._
 
