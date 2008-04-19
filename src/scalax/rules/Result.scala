@@ -19,7 +19,7 @@ package scalax.rules;
 case class ~[+A, +B](_1 : A, _2 : B)
   
 sealed abstract class Result[+Out, +A, +X] extends Functor[A] with OrElse[A] {
-  type M[+B] = Result[_ >: Out, B, _ >: X]
+  type M[+B] = Result[_, B, _]
 }
 
 case class Success[+Out, +A](out : Out, value : A) extends Result[Out, A, Nothing] {
@@ -36,4 +36,3 @@ case class Error[+X](x : X) extends Result[Nothing, Nothing, X] {
   def map[B](f : Nothing => B) = this
   def orElse[B](other : => M[B]) = this
 }
-
