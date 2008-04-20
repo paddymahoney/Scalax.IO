@@ -80,7 +80,7 @@ class CommandLineParser {
 		def apply(f : Flag) : Boolean = all(f) > 0
 
 		/** Returns the first value for the given option. */
-		def apply[A](o : OptionType[A]) : Option[A] = all(o).headOption
+		def apply[A](o : OptionType[A]) : Option[A] = all(o).firstOption
 	}
 
 	/** Interface for the actual received arguments. */

@@ -60,10 +60,6 @@ object misc {
      */
     def !==(that: String) = !(===(that))
     /**
-     * Repeat the string n times.
-     */
-    def *(n: Int) = repeat(s) take n mkString ("", "", "")
-    /**
      * Truncate a string to be of length n.
      */
     def truncate(n: Int) = s substring (0, s.length - n)
