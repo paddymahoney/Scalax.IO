@@ -23,7 +23,7 @@ class InRule[S, +A, +X](rule : Rule[S, Any, A, X]) {
   def & : Rule[S, S, A, X] = rule mapRule {
     case Success(_, a) => in : S => Success(in, a)
     case Failure => in : S => Failure
-    case err : Error[_] => in : S => err
+    case Error(x) => in : S => Error(x)
   }
 }
 
@@ -33,7 +33,7 @@ class SeqRule[S, +A, +X](rule : Rule[S, S, A, X]) {
   def ? = rule mapRule { 
     case Success(out, a) => in : S => Success(out, Some(a))
     case Failure => in : S => Success(in, None)
-    case err @ Error(_) => in : S => err
+    case Error(x) => in : S => Error(x)
   }
   
   /** Creates a rule that always succeeds with a Boolean value.  
