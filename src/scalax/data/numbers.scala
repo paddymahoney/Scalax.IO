@@ -11,6 +11,7 @@
 // -----------------------------------------------------------------------------
 
 package scalax.data
+import java.math.{BigDecimal => JBigDecimal}
 
 /** Converts strings to integers as part of a pattern match, e.g.:
  * <pre>
@@ -43,4 +44,42 @@ class IntExtras(i : Int) {
 	 * is taken to be 31556952 seconds, which is the average length of a year
 	 * in the Gregorian calendar. */
 	def years = i * 31556952000L
+}
+
+object Numbers {
+	/** Returns an approximate value of n, to the nearest 1/divs of 1
+	 * significant figure. */
+	def approximate(n : Long, divs : Int) : Long = {
+		val log = java.lang.Math.log10(n).toInt
+		val scale = Math.pow(10, log).toLong
+		(n * divs * 10L / scale + 5L) / 10L * scale / divs
+	}
+
+	private val si = Array(
+		"y", "z", "a", "f", "p", "n", "µ", "m", "",
+		"k", "M", "G", "T", "P", "E", "Z", "Y"
+	)
+
+	/** Returns n as a String, with trailing zeros replaced by an SI
+	 * abbreviation. */
+	def asSi(n : JBigDecimal, suffix : String) : String = {
+		if(n.compareTo(JBigDecimal.ZERO) == 0) {
+			"0" + suffix
+		} else {
+			val stripped = n.stripTrailingZeros
+			val scale = stripped.scale
+			val scale3 = if(scale >= 0) (scale + 2) / 3 else scale / 3
+			val rscale = if(scale3 > 8) 8 else if(scale3 < -8) -8 else scale3
+			val scaled = stripped.movePointRight(rscale * 3)
+			val prefix = si(-rscale + 8)
+			scaled.toPlainString + prefix + suffix
+		}
+	}
+
+	def asSi(n : BigDecimal, suffix : String) : String =
+		asSi(n.bigDecimal, suffix)
+	def asSi(n : Long, scale : Int, suffix : String) : String =
+		asSi(new JBigDecimal(n).movePointLeft(scale), suffix)
+	def asSi(n : Long) : String =
+		asSi(new JBigDecimal(n), "")
 }
