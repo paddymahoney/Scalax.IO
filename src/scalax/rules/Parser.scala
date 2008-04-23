@@ -40,6 +40,7 @@ trait Parsers[T] extends RulesWithState {
  */
 trait Scanners extends Parsers[Char] {
   implicit def readString(string : String) : Parser[String] = readSeq(string)
+  implicit def readStringIn(string : String) : InRule[S, S, String, X] = inRule(readSeq(string))
 
   def toString(seq : Seq[Any]) = seq.mkString("")
         

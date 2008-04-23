@@ -90,6 +90,7 @@ trait ScalaScanner extends Scanners with MemoisableRules {
   def pos : Parser[() => Int]
   
   implicit def symbolToId(symbol : Symbol) : Parser[Token] = otherToken ?? { case ReservedId(symbol.name) => }
+  implicit def symbolToIdIn(symbol : Symbol) = inRule(symbolToId(symbol))
   
   def syntaxError(message : String) : Parser[Nothing] = error(SyntaxError(message))
 

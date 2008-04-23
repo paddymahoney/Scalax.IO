@@ -39,24 +39,12 @@ trait Rule[-In, +Out, +A, +X] extends (In => Result[Out, A, X]) {
 
   def filter(f : A => Boolean) = flatMap { a => out => if(f(a)) Success(out, a) else Failure }
 
-  def orElse[Out2 >: Out, A2 >: A, X2 >: X](other : => Rule[_ >: In, Out2, A2, X2]) : Rule[In, Out2, A2, X2] = mapRule { 
-    case s @ Success(_, _) => in : In => s
-    case Failure => in : In => other(in)
-    case err @ Error(_) => in : In => err
-  }
-  
-  def orError = orElse(error[In])
+  def orError = this orElse(error[In])
   
   def mapResult[Out2, B, Y](f : Result[Out, A, X] => Result[Out2, B, Y]) = rule { 
     in : In => f(apply(in))
   }
   
-  def mapRule[Out2, B, Y](f : Result[Out, A, X] => (_ >: In) => Result[Out2, B, Y]) : Rule[In, Out2, B, Y] = rule { 
-    in : In => f(apply(in))(in)
-  }
-
-  def |[Out2 >: Out, A2 >: A, X2 >: X](other : => Rule[_ >: In, Out2, A2, X2]) = orElse(other)
-
   def ^^[B](fa2b : A => B) = map(fa2b)
   
   def ^^?[B](pf : PartialFunction[A, B]) = filter (pf.isDefinedAt(_)) ^^ pf 
