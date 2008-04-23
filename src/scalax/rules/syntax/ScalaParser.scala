@@ -59,6 +59,7 @@ trait ScalaParser extends Parsers[Token] with MemoisableRules {
     case ReservedId(`name`) => name
   }
   implicit def stringToTokenSeq(name : String) = seqRule(stringToToken(name))
+  implicit def stringToTokenIn(name : String) = inRule(stringToToken(name))
 
   /** Treat a Char as a rule that matches the corresponding delimiter, plain or reserved id */
   implicit def charToToken(char : Char) : Parser[Token] = item ?? {

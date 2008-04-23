@@ -12,18 +12,35 @@
 
 package scalax.rules
 
-class InRule[S, +A, +X](rule : Rule[S, Any, A, X]) {
+/** 
+ * A workaround for the difficulties of dealing with
+ * a contravariant 'In' parameter type...
+ */
+class InRule[In, +Out, +A, +X](rule : Rule[In, Out, A, X]) {
+  
+  def mapRule[Out2, B, Y](f : Result[Out, A, X] => In => Result[Out2, B, Y]) : Rule[In, Out2, B, Y] = rule.factory.rule { 
+    in : In => f(rule(in))(in)
+  }
+
+  def orElse[Out2 >: Out, A2 >: A, X2 >: X](other : => Rule[In, Out2, A2, X2]) : Rule[In, Out2, A2, X2] = mapRule { 
+    case s @ Success(_, _) => in : In => s
+    case Failure => in : In => other(in)
+    case err @ Error(_) => in : In => err
+  }
+
+  def |[Out2 >: Out, A2 >: A, X2 >: X](other : => Rule[In, Out2, A2, X2]) = orElse(other)
+
   /** Creates a rule that suceeds only if the original rule would fail on the given context. */
-  def unary_! : Rule[S, S, Unit, Nothing] = rule mapRule { 
-    case Success(_, _) => in : S => Failure
-    case _ => in : S => Success(in, ())
+  def unary_! : Rule[In, In, Unit, Nothing] = mapRule { 
+    case Success(_, _) => in : In => Failure
+    case _ => in : In => Success(in, ())
   }
 
   /** Creates a rule that succeeds if the original rule succeeds, but returns the original input. */
-  def & : Rule[S, S, A, X] = rule mapRule {
-    case Success(_, a) => in : S => Success(in, a)
-    case Failure => in : S => Failure
-    case Error(x) => in : S => Error(x)
+  def & : Rule[In, In, A, X] = mapRule {
+    case Success(_, a) => in : In => Success(in, a)
+    case Failure => in : In => Failure
+    case Error(x) => in : In => Error(x)
   }
 }
 
