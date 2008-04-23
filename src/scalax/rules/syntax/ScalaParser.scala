@@ -47,7 +47,7 @@ trait ScalaParser extends Parsers[Token] with MemoisableRules {
   def canEndStatement(token : Token) = lastTokenCanEndStatement(scanner.canEndStatement(token)) -^ token
   
   lazy val nl : Parser[Token] = NewLineToken
-  lazy val literal : Parser[Literal[_]] = item ^^? { case l : Literal[_] => l } as "literal"
+  lazy val literal : Parser[Literal[Any]] = item ^^? { case l : Literal[_] => l } as "literal"
   lazy val quoteId : Parser[String] = item ^^? { case QuoteId(name) => name }
   lazy val plainId : Parser[String] = item ^^? { case PlainId(name) => name }
   lazy val id = quoteId | plainId as "id"
