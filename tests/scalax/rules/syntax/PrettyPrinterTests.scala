@@ -25,10 +25,10 @@ object Hello extends Application {
 }"""
   
 val html = """<br />
-<span class="keyword">package</span>&#160;a.b.c<br />
+<span class="reservedId">package</span>&#160;a.b.c<br />
 <br />
 <span class="comment">/**&#160;my&#160;comment&#160;*/</span><br />
-<span class="keyword">object</span>&#160;Hello&#160;<span class="keyword">extends</span>&#160;Application&#160;{<br />
+<span class="reservedId">object</span>&#160;Hello&#160;<span class="reservedId">extends</span>&#160;Application&#160;{<br />
 &#160;&#160;println(<span class="literal">"Hello&#160;World!"</span>)<br />
 }"""
   

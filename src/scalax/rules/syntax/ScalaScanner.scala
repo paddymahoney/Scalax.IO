@@ -131,7 +131,7 @@ trait ScalaScanner extends Scanners with MemoisableRules {
   
   lazy val delimiter : Parser[Position => Delimiter] = choice("(){}[];,.") ^^ { ch => Delimiter(ch) }
 
-  lazy val id : Parser[Position => NameToken] = quoteId | reservedId | plainId ^^ { name => PlainId(name) }
+  lazy val id : Parser[Position => NameToken] = quoteId | (reservedId as "reservedId") | plainId ^^ { name => PlainId(name) }
     
   lazy val quoteId : Parser[Position => NameToken] = '`' -~ (printableChar +~- '`') ^^ toString ^^ { name => QuoteId(name) }
   lazy val plainId = (letter ~++ idRest | (opChar+)) ^^ toString as "plainId"

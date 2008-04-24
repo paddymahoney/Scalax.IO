@@ -38,7 +38,7 @@ class PrettyPrinter extends SimpleScalaParser {
   
   val prettyPrint = (
         style("comment") 
-      | style("keyword") 
+      | style("reservedId") 
       | style("literal")
       | style("attributeValue")
       | style("xmlComment")
@@ -55,5 +55,4 @@ class PrettyPrinter extends SimpleScalaParser {
     case Success(_, text) => text
     case _ => ""
   }
-  
 }
