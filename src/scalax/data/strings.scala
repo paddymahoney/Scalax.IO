@@ -55,6 +55,18 @@ class StringExtras(s : String) {
 		StringHelp.truncate(s, maxLen, terminator)
 
 	def reader = new BufferedReader(new StringReader(s))
+
+	def replaceChars(f : PartialFunction[Char, String]) = {
+		val sb = new StringBuffer
+		var i = 0
+		val l = s.length
+		while(i < l) {
+			val c = s.charAt(i)
+			if(f.isDefinedAt(c)) sb.append(f(c)) else sb.append(c)
+			i += 1
+		}
+		sb.toString
+	}
 }
 
 /** Some convenience functions for string manipulation. */
