@@ -71,7 +71,7 @@ class FileExtras(file : File) {
 
 	/** Slurps the entire input file into a string, using the system default
 	 * character set. */
-	def slurp = for(r <- reader) yield StreamHelp.slurp(r)
+	def slurp() = for(r <- reader) yield StreamHelp.slurp(r)
 
 	/** Slurps the entire input file into a string, using the supplied
 	 * character set. */
