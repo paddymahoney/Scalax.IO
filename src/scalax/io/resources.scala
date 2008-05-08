@@ -110,7 +110,7 @@ abstract class InputStreamResource[+I <: InputStream] extends CloseableResource[
 }
 
 object InputStreamResource extends ResourceFactory {
-	type RT = InputStreamResource[InputStream]
+	override type RT = InputStreamResource[InputStream]
 	
 	def apply[I <: InputStream](is : => I) =
 		new InputStreamResource[I] {
@@ -124,7 +124,7 @@ object InputStreamResource extends ResourceFactory {
 	def bytes(b : Array[Byte]) : InputStreamResource[ByteArrayInputStream] =
 		bytes(b, 0, b.length)
 	
-	def file(file : File) =
+	override def file(file : File) =
 		apply(new FileInputStream(file))
 
 	private def url(url : java.net.URL) = {
@@ -153,7 +153,7 @@ object InputStreamResource extends ResourceFactory {
 	
 	private val GZIP_URL_PREFIXES = List("gzip:", "gunzip:")
 	
-	def url(u : String): InputStreamResource[InputStream] = {
+	override def url(u : String): InputStreamResource[InputStream] = {
 		if (u startsWith CLASSPATH_URL_PREFIX) classpath(u.substring(CLASSPATH_URL_PREFIX.length))
 		else {
 			val gzippedO = GZIP_URL_PREFIXES.map(prefix => (prefix, u startsWith prefix))
@@ -197,7 +197,9 @@ abstract class ReaderResource[+R <: Reader] extends CloseableResource[R] {
 	}
 }
 
-object ReaderResource {
+object ReaderResource extends ResourceFactory  {
+	override type RT = ReaderResource[Reader]
+
 	def string(s : String) =
 		apply(new StringReader(s))
 	
@@ -206,6 +208,12 @@ object ReaderResource {
 			type Handle = R
 			def unsafeOpen() = r
 		}
+	
+	override def file(f : File) =
+		InputStreamResource.file(f).reader
+	
+	override def url(u : String) =
+		InputStreamResource.url(u).reader
 }
 
 abstract class OutputStreamResource[+O <: OutputStream] extends CloseableResource[O] {
@@ -253,7 +261,7 @@ abstract class OutputStreamResource[+O <: OutputStream] extends CloseableResourc
 }
 
 object OutputStreamResource extends ResourceFactory {
-	type RT = OutputStreamResource[OutputStream]
+	override type RT = OutputStreamResource[OutputStream]
 	
 	def apply[O <: OutputStream](os : => O) =
 		new OutputStreamResource[O] {
@@ -267,13 +275,13 @@ object OutputStreamResource extends ResourceFactory {
 	def fileAppend(file : File) : OutputStreamResource[FileOutputStream] =
 		fileAppend(file, true)
 		
-	def file(file : File) =
+	override def file(file : File) =
 		apply(new FileOutputStream(file))
 		
 	private val FILE_URL_PREFIX = "file:"
 	private val GZIP_URL_PREFIX = "gzip:"
 	
-	def url(u : String) : OutputStreamResource[OutputStream] = {
+	override def url(u : String) : OutputStreamResource[OutputStream] = {
 		if (u startsWith FILE_URL_PREFIX) file(new File(u substring FILE_URL_PREFIX.length))
 		else if (u startsWith GZIP_URL_PREFIX) url(u substring GZIP_URL_PREFIX.length).gzip
 		else throw new IllegalArgumentException("unknown url: " + u)
@@ -321,12 +329,20 @@ abstract class WriterResource[+W <: Writer] extends CloseableResource[W] {
 	}
 }
 
-object WriterResource {
+object WriterResource extends ResourceFactory {
+	override type RT = WriterResource[Writer]
+	
 	def apply[W <: Writer](w : => W) =
 		new WriterResource[W] {
 			type Handle = W
 			def unsafeOpen() = w
 		}
+	
+	override def file(f : File) =
+		OutputStreamResource.file(f).writer
+	
+	override def url(u : String) =
+		OutputStreamResource.url(u).writer
 }
 
 // vim: set ts=4 sw=4 noet:
