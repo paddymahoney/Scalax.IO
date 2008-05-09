@@ -70,6 +70,7 @@ The Scala Community Library (Scalax) is a nascent project to develop a general u
         </executions>
         <configuration>
           <scalaVersion>${scala.version}</scalaVersion>
+	  <vscaladocVersion>1.1</vscaladocVersion>
           <args>
             <arg>-target:jvm-1.5</arg>
             <arg>-unchecked</arg>
