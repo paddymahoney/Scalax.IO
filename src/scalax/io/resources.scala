@@ -214,6 +214,9 @@ object ReaderResource extends ResourceFactory  {
 	
 	override def url(u : String) =
 		InputStreamResource.url(u).reader
+	
+	def classpath(p : String) =
+		InputStreamResource.classpath(p).reader
 }
 
 abstract class OutputStreamResource[+O <: OutputStream] extends CloseableResource[O] {
