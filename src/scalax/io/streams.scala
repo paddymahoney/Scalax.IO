@@ -22,6 +22,7 @@ class InputStreamExtras(s : InputStream) {
 }
 
 class ReaderExtras(r : Reader) {
+	def slurp() = StreamHelp.slurp(r)
 	def pumpTo(d : Writer) = StreamHelp.pump(r, d)
 	def lines = StreamHelp.lines(r)
 	def ensureBuffered = StreamHelp.ensureBuffered(r)
@@ -131,3 +132,5 @@ object StreamHelp
 		zis.close()
 	}
 }
+
+// vim: set ts=4 sw=4 noet:
