@@ -22,4 +22,9 @@ object ScalaxTests extends TestSuite("Scalax") {
 	include(FileHelpTests)
 	
 	include(ConcurrentLinkedListTests)
+	
+	// scalax.logging
+	include(LoggingTests)
 }
+
+// vim: set ts=4 sw=4 noet:

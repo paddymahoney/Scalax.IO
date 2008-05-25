@@ -49,6 +49,11 @@
 			<version>[${scala.version},)</version>
 			<scope>provided</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>1.5.0</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<sourceDirectory>src</sourceDirectory>
@@ -115,3 +120,5 @@
 		</snapshotRepository>
 	</distributionManagement> 
 </project>
+
+<!-- vim: set ts=4 sw=4 noet: -->

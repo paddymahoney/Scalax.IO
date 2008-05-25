@@ -16,6 +16,7 @@
 		<property name="scala-library.jar" value="${scala.home}/lib/scala-library.jar"/>
 		<path id="build.classpath">
 			<pathelement location="${scala-library.jar}"/>
+			<pathelement location="${user.home}/.m2/repository/org/slf4j/slf4j-api/1.5.0/slf4j-api-1.5.0.jar"/>
 		</path>
 		<taskdef resource="scala/tools/ant/antlib.xml">
 			<classpath>
