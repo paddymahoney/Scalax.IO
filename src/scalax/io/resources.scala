@@ -314,6 +314,9 @@ abstract class WriterResource[+W <: Writer] extends CloseableResource[W] {
 		for (w <- this) w.write(string)
 	}
 	
+	/** Alias for <code>writeString</code> */
+	def write(string : String) = writeString(string)
+	
 	/** Write strings adding line separator after each line */
 	def writeLines(lines : Seq[String]) {
 		for (w <- buffered; line <- lines) {
