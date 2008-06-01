@@ -67,10 +67,12 @@ class IncrementalInput[A]
 
   /** Insert an element */
   protected def insert(value : A) {
-    val elem = new IncrementalInput[A]
+    val elem = newElement
     elem.next = next
     next = Success(elem, value)
   }
+  
+  protected def newElement = new IncrementalInput[A]
   
   protected def hasNextElement = next match {
     case Success(_, _) => true

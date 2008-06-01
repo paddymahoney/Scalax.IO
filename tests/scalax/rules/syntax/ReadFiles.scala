@@ -16,12 +16,13 @@ import java.io.{BufferedReader, File, FileReader, Reader}
 
 
 object ReadFiles extends SimpleScalaParser with Application {
+  val start = System.currentTimeMillis
+  
   //DefaultMemoisable.debug = true
-  //process(new File("../scala-trunk/src/compiler/scala/tools/nsc/backend/icode/Opcodes.scala"))
+  //process(new File("../scala-trunk-mod/src/compiler/scala/tools/nsc/doc/ModelToXML.scala"))
   
   //process(new File("src/scalax/rules"))
-  val start = System.currentTimeMillis
-  process(new File("../scala-trunk/src/compiler"))
+  process(new File("../scala-trunk-mod/src/compiler"))
   val end = System.currentTimeMillis
   
   println("Seconds: " + (end - start) / 1000.0)

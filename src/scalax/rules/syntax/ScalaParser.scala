@@ -275,13 +275,13 @@ trait ScalaParser extends Parsers[Token] with MemoisableRules {
     next ~*~ (op.-[S]('|'))
   }
  
-  // Changed to allow constant expressions like "-1" - note prefixExpr must be a constant expression
-  // See ticket #264
-  lazy val simplePattern : Parser[Expression] = ('_' -^ Underscore
+  lazy val simplePattern : Parser[Expression] = (
+      '_' ~- '*' -^ Underscore // see ticket #990
+      | '_' -^ Underscore
       | literal
       | scanner.xmlPattern
       | stableId ~ round(pattern*/',' ~- (','?)) ^^ { case a ~ b => StableIdPattern(a, Some(b), false) }
-      | stableId ~ round((pattern ~- ',' *) ~- '_' ~- '*') ^^ { case a ~ b => StableIdPattern(a, Some(b), true) }
+      //| stableId ~ round((pattern ~- ',' *) ~- '_' ~- '*') ^^ { case a ~ b => StableIdPattern(a, Some(b), true) }
       | round(patterns ~- (','?)) ^^ TupleExpression
       | varId ~- !'.' ^^ VariablePattern
       | prefixExpr  // added by me, but prevents next alternative from succeeding

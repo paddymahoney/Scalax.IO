@@ -20,24 +20,18 @@ class SimpleScalaParser extends MemoisableRules with ScalaParser {
   //DefaultMemoisable.debug = true
   
   case class Input(chars : Seq[Char], index : Int) {
+    //println("@" + index)
     
     lazy val nextInput = Input(chars, index + 1)
     
-    val state = Map(
-        (true, true) -> State(true, true),
-        (true, false) -> State(true, false),
-        (false, true) -> State(false, true),
-        (false, false) -> State(false, false)
-    )
-    
-    def apply(multiple : Boolean, canEnd : Boolean) = state(multiple, canEnd)
+    def apply(multiple : Boolean, canEnd : Boolean) = State(multiple, canEnd)
     
     case class State(multiple : Boolean, canEnd : Boolean) extends DefaultMemoisable {
       def next : Result[S, Char, Nothing] = if (index < chars.length) 
         Success(nextInput(multiple, canEnd), chars(index)) 
         else Failure
         
-      def apply(multiple : Boolean, canEnd : Boolean) = state(multiple, canEnd)
+      def apply(multiple : Boolean, canEnd : Boolean) = State(multiple, canEnd)
       def index = Input.this.index
       def chars = Input.this.chars
     }

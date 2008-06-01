@@ -64,5 +64,5 @@ class ScalaInput(val input : IncrementalInput[Char], val state : ParserState)
     }
   }
 
-  override def toString = state + input.toString
+  //override def toString = state + input.toString
 }
