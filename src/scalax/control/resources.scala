@@ -168,8 +168,15 @@ abstract class ManagedSequence[+A] extends PartialFunction[Int, A] { self =>
 				None
 			}
 		}
-	def head = apply(0)
+	
+	@deprecated
+	def head = first
+	def first = apply(0)
+	
+	@deprecated
 	def headOption =
+		firstOption
+	def firstOption = 
 		for(v <- resource) yield {
 			val iter = iterator(v)
 			if(iter.hasNext) Some(iter.next) else None
@@ -422,3 +429,5 @@ abstract class ManagedSequence[+A] extends PartialFunction[Int, A] { self =>
 	protected def stringPrefix = "ManagedSequence"
 	override def toString = mkString(stringPrefix+"(", ", ", ")")
 }
+
+// vim: set ts=4 sw=4 noet:
