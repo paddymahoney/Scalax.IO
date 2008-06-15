@@ -80,6 +80,7 @@ trait ScalaParser extends Parsers[Token] with MemoisableRules {
   def curly[T](rule : Parser[T]) = '{' -~ multipleStatements(rule) ~- '}'
       
   lazy val `=>` = "=>" | "\u21D2"
+  lazy val `<-` = "<-" | "\u2190"
       
   lazy val qualId = id+/'.'
   lazy val ids = id+/','
@@ -244,14 +245,14 @@ trait ScalaParser extends Parsers[Token] with MemoisableRules {
   // Note: added deprecated syntax
   lazy val enumerators = (generator | deprecatedGenerator) ~++ (semi -~ enumerator *)
   
-  lazy val generator = pattern1 ~- "<-" ~ expr ~ (guard?) ^~~^ Generator
+  lazy val generator = pattern1 ~- `<-` ~ expr ~ (guard?) ^~~^ Generator
   lazy val guard = "if" -~ postfixExpr
   lazy val enumerator : Parser[Enumerator] = (generator 
       | guard ^^ Guard
       | ("val" -~ pattern1 ~- '=') ~ expr ^~^ ValEnumerator 
       | deprecatedEnumerator)
       
-  lazy val deprecatedGenerator = "val" -~ pattern1 ~- "<-" ~ expr ~ none ^~~^ Generator
+  lazy val deprecatedGenerator = "val" -~ pattern1 ~- `<-` ~ expr ~ none ^~~^ Generator
   lazy val deprecatedEnumerator : Parser[Enumerator] = (deprecatedGenerator 
       | (pattern1 ~- '=') ~ expr ^~^ ValEnumerator 
       | postfixExpr ^^ Guard)

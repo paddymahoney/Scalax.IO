@@ -24,7 +24,7 @@ object ScalaScanner {
       "finally", "for", "forSome", "if", "implicit", "import", "lazy", "match", "new", "null", "object",
       "override", "package", "private", "protected", "requires", "return", "sealed", "super", "this", 
       "throw", "trait", "try", "true", "type", "val", "var", "while", "with", "yield",
-      "_", ":", "=", "=>", "<-", "<:", "<%", ">:", "#", "@", "\u21D2")
+      "_", ":", "=", "=>", "<-", "<:", "<%", ">:", "#", "@", "\u21D2", "\u2190")
 
   /** Reserved ids that can terminate a statement */
   val endStatements = Set("this", "null", "true", "false", "return", "type", "_")
@@ -35,7 +35,7 @@ object ScalaScanner {
    */
   val cannotStartStatements = Set(
       "case", "catch", "else", "extends", "finally", "forSome", "match", "requires", "with", "yield",
-      "_", ":", "=", "=>", "<-", "<:", "<%", ">:", "#", "\u21D2")
+      "_", ":", "=", "=>", "<-", "<:", "<%", ">:", "#", "\u21D2", "\u2190")
 
   def isReserved(id : String) = reserved.contains(id)
   def isNotReserved(id : String) = !reserved.contains(id)
