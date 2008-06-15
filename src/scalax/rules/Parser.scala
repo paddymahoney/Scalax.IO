@@ -31,6 +31,12 @@ trait Parsers[T] extends RulesWithState {
   def choice[C <% Seq[T]](seq : C) = oneOf(seq map elem)
 
   /** Allows rules like 'a' to 'z' */
+  // the situation after Scala ticket #970 ('a' to 'z' returns RandomAccessSeq.Projection)
+  implicit def iterableToChoice[TS <: Iterable[T]](iterable : TS) : Parser[T] = choice(iterable.toList)
+  implicit def iterableToChoiceSeq[TS <: Iterable[T]](iterable : TS) = seqRule(iterableToChoice(iterable))
+  
+  // the situation before Scala ticket #970 ('a' to 'z' returns Iterator)
+  // TODO remove these some day! (some time after release of Scala 2.7.2)
   implicit def iteratorToChoice[TS <: Iterator[T]](iterator : TS) : Parser[T] = choice(iterator.toList)
   implicit def iteratorToChoiceSeq[TS <: Iterator[T]](iterator : TS) = seqRule(iteratorToChoice(iterator))
 }
