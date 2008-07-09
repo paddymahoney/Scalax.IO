@@ -18,21 +18,30 @@ package scalax.rules;
  */
 case class ~[+A, +B](_1 : A, _2 : B)
   
-sealed abstract class Result[+Out, +A, +X] extends Functor[A] with OrElse[A] {
-  type M[+B] = Result[_, B, _]
+sealed abstract class Result[+Out, +A, +X] {
+  def map[B](f : A => B) : Result[Out, B, X]
+  def map[Out2, B](f : (Out, A) => (Out2, B)) : Result[Out2, B, X]
+  def flatMap[Out2, B](f : (Out, A) => Result[Out2, B, Nothing]) : Result[Out2, B, X]
+  def orElse[Out2 >: Out, B >: A](other : => Result[Out2, B, Nothing]) : Result[Out2, B, X]
 }
 
 case class Success[+Out, +A](out : Out, value : A) extends Result[Out, A, Nothing] {
   def map[B](f : A => B) = Success(out, f(value))
-  def orElse[B >: A](other : => M[B]) = this
+  def map[Out2, B](f : (Out, A) => (Out2, B)) = f(out, value) match { case (out2, b) => Success(out2, b) }
+  def flatMap[Out2, B](f : (Out, A) => Result[Out2, B, Nothing]) = f(out, value)
+  def orElse[Out2 >: Out, B >: A](other : => Result[Out2, B, Nothing]) = this
 }
 
 case object Failure extends Result[Nothing, Nothing, Nothing] {
   def map[B](f : Nothing => B) = this
-  def orElse[B](other : => M[B]) = other
+  def map[Out2, B](f : (Nothing, Nothing) => (Out2, B)) = this
+  def flatMap[Out2, B](f : (Nothing, Nothing) => Result[Out2, B, Nothing]) = this
+  def orElse[Out2, B](other : => Result[Out2, B, Nothing]) = other
 }
 
 case class Error[+X](x : X) extends Result[Nothing, Nothing, X] {
   def map[B](f : Nothing => B) = this
-  def orElse[B](other : => M[B]) = this
+  def map[Out2, B](f : (Nothing, Nothing) => (Out2, B)) = this
+  def flatMap[Out2, B](f : (Nothing, Nothing) => Result[Out2, B, Nothing]) = this
+  def orElse[Out2, B](other : => Result[Out2, B, Nothing]) = other
 }

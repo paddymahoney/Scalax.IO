@@ -12,6 +12,13 @@
 
 package scalax.rules
 
+class Thunk[-In, +Out, +A, +X](rule : Rule[In, Out, A, X], in : In) extends Rule[Unit, Out, A, X] with Function0[Result[Out, A, X]] {
+  val factory = rule.factory
+  lazy val value = rule(in)
+  def apply(unit : Unit) = value
+  def apply() = value
+}
+               
 /** A Rule is a function from some input to a Result.  The result may be:
   * <ul>
   * <li>Success, with a value of some type and an output that may serve as the input to subsequent rules.</li> 
@@ -26,6 +33,8 @@ package scalax.rules
 trait Rule[-In, +Out, +A, +X] extends (In => Result[Out, A, X]) { 
   val factory : Rules
   import factory._
+  
+  def thunk(in : In) = new Thunk(this, in)
   
   def as(name : String) = ruleWithName(name, this)
   
