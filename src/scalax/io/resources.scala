@@ -143,7 +143,7 @@ object InputStreamResource extends ResourceFactory {
 	def classpath(path : String, classLoader: ClassLoader): InputStreamResource[InputStream] = {
 		def is = {
 			val is = classLoader.getResourceAsStream(path)
-			if (is eq null) throw new FileNotFoundException
+			if (is eq null) throw new FileNotFoundException("classpath resource " + path + " not found")
 			is
 		}
 		apply(is)
