@@ -16,11 +16,16 @@ import java.nio.channels._
 import java.nio.charset._
 import java.util.regex._
 import scalax.control._
+import scalax.data._
+import scala.collection.mutable._
 
 /** Adds extra methods to File. */
 class FileExtras(file : File) {
 	/** Deletes the file or directory recursively. Returns false if it failed. */
 	def deleteRecursively() = FileHelp.deleteRecursively(file)
+
+	/** Returns a FileTree for this file. */
+	def tree = new FileTree(file);
 
 	/** Obtains a Reader using the system default charset. */
 	def reader = inputStream.reader
@@ -157,4 +162,39 @@ object FileHelp {
 	val lineSeparator = System.getProperty("line.separator", "\n")
 	
 	// XXX: add implicit def toFileExtras(file : File) = new FileExtras(file)
+}
+
+/** Represents the preorder traversal of the directory tree rooted at the given file. */
+class FileTree(val root : File) extends IteratorSeq[File] {
+	def elements = new Walk
+
+	class Walk private[FileTree] extends Iterator[File] {
+		private val files = new Queue[File]();
+		private val dirs = new Queue[File]();
+		private var failed = false;
+		dirs.enqueue(root)
+
+		private def enqueue(dir: File) = {
+			val list = dir.listFiles()
+			if(list == null) {
+				failed = true;
+			} else {
+				for (file <- dir.listFiles()) {
+					if (file.isDirectory()) dirs.enqueue(file)
+					else files.enqueue(file)
+				}
+			}
+			dir
+		}
+
+		def hasNext = files.length != 0 || dirs.length != 0
+
+		def next() = {
+			failed = false;
+			if (!hasNext) throw new NoSuchElementException("No more results")
+			if (files.length != 0) files.dequeue else enqueue(dirs.dequeue)
+		}
+
+		def wasUnreadable = failed;
+	}
 }
