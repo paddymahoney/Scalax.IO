@@ -16,13 +16,29 @@ import scala.collection.jcl.MapWrapper
 import java.util.concurrent.atomic._
 import java.util.concurrent.{ConcurrentHashMap => JConcurrentHashMap, _}
 
-final class AtomicCell[A](init : A) {
+final class AtomicCell[A](init : A) extends Reference[A] {
 	private val ref = new AtomicReference(init)
 	def compareAndSet(expect : A, update : A) : Boolean =
 		ref.compareAndSet(expect, update)
 	def get : A = ref.get().asInstanceOf[A]
 	def getAndSet(n : A) : A = ref.getAndSet(n).asInstanceOf[A]
 	def set(n : A) : Unit = ref.set(n)
+  
+  final override def modify(f : A => A) {
+    val oldValue = get;
+
+    if (!compareAndSet(oldValue, f(oldValue))) modify(f);
+    else ();
+  }
+  
+  final override def modifyWith[S](f : A => (A, S)) : S = {
+    val oldValue = get;
+    val (newValue, s) = f(oldValue);
+  
+    if (!compareAndSet(oldValue, newValue)) modifyWith(f);
+    else s;
+  }
+  
 	override def toString() : String = ref.get.toString
 	def weakCompareAndSet(expect : A, update : A) : Boolean =
 		ref.weakCompareAndSet(expect, update)
