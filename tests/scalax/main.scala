@@ -16,19 +16,24 @@ object ScalaxTests extends TestSuite("Scalax") {
 	include(CommandLineTests)
 	include(CsvTests)
 
-  // scalax.control
+	// scalax.control
+	include(RefTests)
+	include(ConcurrentLinkedListTests)
 
-  include(RefTests)
-	
 	// scalax.io
 	include(StreamHelpTests)
 	include(ResourcesTests)
 	include(FileHelpTests)
-	
-	include(ConcurrentLinkedListTests)
-	
+
 	// scalax.logging
 	include(LoggingTests)
+}
+
+class TestScalax {
+	def testScalax() {
+		val (p, n) = ScalaxTests.run();
+		if (p != n) throw new AssertionError((n - p) + "tests failed.")
+	}
 }
 
 // vim: set ts=4 sw=4 noet:
