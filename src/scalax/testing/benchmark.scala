@@ -112,3 +112,51 @@ class Benchmark(iters : Int) {
 		print("\n\n")
 	}
 }
+
+class SizedBenchmark{
+  def iters = 1000;
+  def runs = 10;  
+
+  def testSizes : Iterable[Int] = (10 until 100 by 10) ++ (100 until 1000 by 100) ++ (1000 until 10000 by 1000) ++ (10000 to 20000 by 2000);   
+
+  private[this] val benchmarks = new scala.collection.mutable.ListBuffer[Benchmark[_]]
+  
+
+  val sizes = testSizes.toList.toArray;
+  
+
+  abstract class Benchmark[T](val name : String){
+    def data(size : Int) : T;
+    def test(t : T) : Unit; 
+
+    benchmarks += this;
+
+    val times = new Array[Long](sizes.length); 
+
+    def run(index : Int) = {
+      val size = sizes(index);
+      val d = data(size);
+      val start = System.nanoTime;
+      var i = 0;
+      while (i < iters){
+        test(d);
+        i += 1;
+      }
+      val time = System.nanoTime - start;
+      times(index) += time;
+    }
+  }
+
+  def main(args : Array[String]){
+    print("Size, ")
+    println(benchmarks.map(_.name).mkString(", "));
+    for (i <- 0 until sizes.length){
+      for (_ <- 0 until runs) benchmarks.foreach(_.run(i));
+      print(sizes(i));
+      print(", ");
+      println(benchmarks.map(b => (b.times(i) / 1000).toDouble / (iters * runs) ).mkString(", "));      
+    }    
+  }
+}
+
+
