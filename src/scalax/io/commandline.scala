@@ -315,6 +315,10 @@ class CommandLineParser {
 
 		out.print(helpHeader)
 		for(i <- opts) {
+			i.shortName match {
+				case Some(sn) => out.print("  -"+sn)
+				case None => out.print("    ")
+			}
 			out.print("  -")
 			out.print(i.shortName)
 			out.print("  --")
