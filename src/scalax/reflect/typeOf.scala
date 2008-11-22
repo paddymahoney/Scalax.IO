@@ -21,12 +21,10 @@ import scala.reflect.Manifest
  */
 sealed class typeOf[T](implicit val manifest: Manifest[T]) {
 
-    /* Uncomment these when Scalax uses > 2.7.1
   def erasure = manifest.erasure
 
   def <:<[S](other: typeOf[S]) = manifest <:< other.manifest
   def >:>[S](other: typeOf[S]) = manifest >:> other.manifest
-    */
 
   override def toString = manifest.toString
   override def hashCode = manifest.hashCode
