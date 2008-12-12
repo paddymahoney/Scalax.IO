@@ -189,7 +189,7 @@ abstract class ReaderResource[+R <: Reader] extends CloseableResource[R] {
 	def readLines(): Seq[String] = lines.toList
 	
 	/** First line or <code>""</code> if file is empty */
-	def readLine() = lines.headOption.getOrElse("")
+	def readLine() = lines.firstOption.getOrElse("")
 	
 	def pumpTo[W <: Writer](wr : WriterResource[W]) {
 		// Note Reader should be opened before Writer

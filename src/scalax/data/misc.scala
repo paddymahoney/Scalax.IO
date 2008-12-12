@@ -71,7 +71,7 @@ object misc {
     /**
      * String interpolator.
      */
-    def format(a: Array[AnyRef]) = String.format(s, a)
+    def format(a: Array[AnyRef]) = String.format(s, a :_*)
   }
   implicit def str2xstr(s: String): XString = XString(s)
   implicit def xstr2str(s: XString): String = s.s
