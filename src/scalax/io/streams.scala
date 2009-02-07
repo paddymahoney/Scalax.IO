@@ -15,6 +15,29 @@ import java.io._
 import java.util.zip._
 import scalax.data._
 
+private[io] abstract class FetchIterator[T] extends Iterator[T] {
+
+	var fetched = false
+	var nextItem : Option[T] = None
+	
+	protected def fetchNext(): Option[T]
+	
+	override def hasNext = {
+		if (!fetched) {
+			nextItem = fetchNext()
+			fetched = true
+		}
+		nextItem.isDefined
+	}
+	
+	override def next() = {
+		if (!hasNext) throw new NoSuchElementException("EOF")
+		fetched = false
+		nextItem.get
+	}
+	
+}
+
 class InputStreamExtras(s : InputStream) {
 	def slurp() = StreamHelp.slurp(s)
 	def pumpTo(d : OutputStream) = StreamHelp.pump(s, d)
@@ -76,24 +99,12 @@ object StreamHelp
 	 * Iterates over the lines of the reader.
 	 * Keeps reader open even after reaching EOF, reader must be closed explicitly.
 	 */
-	def lines(br : BufferedReader) = new Iterator[String] {
-		var fetched = false
-		var nextLine : String = _
-		
-		def hasNext = {
-			if (!fetched) {
-				nextLine = br.readLine()
-				fetched = true
+	def lines(br : BufferedReader): Iterator[String] = new FetchIterator[String] {
+		override def fetchNext() =
+			br.readLine() match {
+				case null => None
+				case s => Some(s)
 			}
-			nextLine ne null
-		}
-		
-		def next() = {
-			if (!hasNext) throw new NoSuchElementException("EOF")
-			fetched = false
-			nextLine
-		}
-		
 	}
 
 	/** Iterates over the lines of the reader. */
