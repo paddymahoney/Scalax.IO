@@ -39,8 +39,6 @@ class FileExtras(file : File) {
 	/** Obtains a Writer using the supplied charset. */
 	def writer(charset : String) = outputStream.writer(charset)
 	
-	def printWriter = writer.buffered.printWriter
-
 	/** Obtains an InputStream. */
 	def inputStream = InputStreamResource.file(file)
 	
