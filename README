@@ -23,6 +23,17 @@
 
     -- Compiling --
 
+   Scalax has been updated to use the Simple Build Tool.   This allows Scalax to be compiled against several scala versions concurrently.
+
+   To build Scalax please download the simple build tool as described here: http://code.google.com/p/simple-build-tool/wiki/Setup
+
+   To build, simple run the sbt shell script and enter the following commands:
+   > + update
+   > + test
+   > + package
+
+
+
     Scalax depends only on the Scala compiler (latest stable release).  A
     Makefile and Ant project are both provided.
 
