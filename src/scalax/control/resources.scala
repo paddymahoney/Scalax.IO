@@ -13,7 +13,6 @@
 package scalax.control
 import java.io._
 import scala.collection.mutable._
-import scalax.data.FastArrayBuffer
 
 /** Provides automatic resource management, equivalent to C#'s using, or C++
  * RAII. Idiomatic usage would be as follows (in fact FileExtras provides a
@@ -303,7 +302,7 @@ abstract class ManagedSequence[+A] extends PartialFunction[Int, A] { self =>
 		}
 	def toArray[B >: A] =
 		for(v <- resource) yield {
-			val a = new FastArrayBuffer[B]
+			val a = new ArrayBuffer[B]
 			a ++= iterator(v)
 			a.toArray
 		}
