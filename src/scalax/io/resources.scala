@@ -17,7 +17,7 @@ import java.net.URL
 import java.nio.channels._
 import java.nio.charset._
 import java.util.regex._
-import scalax.control._
+import scalax.control.{ManagedResource, ManagedSequence}
 
 abstract class ResourceFactory {
 	/** Resource type */

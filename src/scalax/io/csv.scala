@@ -14,8 +14,7 @@ package scalax.io
 import java.io._
 import java.text._
 import scala.collection.mutable._
-import scalax.control._
-import scalax.data._
+import scalax.control.{ManagedResource,ManagedSequence}
 import scalax.io.Implicits._
 
 /** An iterator interface to a CSV data stream: generates an array of strings

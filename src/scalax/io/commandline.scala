@@ -14,7 +14,7 @@ package scalax.io
 import java.io._
 import scala.collection.immutable
 import scala.collection.mutable._
-import scalax.data._
+import scalax.data.{PolyHashMap, Bistate, Positive, Negative}
 import scalax.data.Implicits._
 
 /** A utility for parsing GNU-style command-line arguments.

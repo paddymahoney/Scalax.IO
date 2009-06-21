@@ -13,7 +13,7 @@
 package scalax.control
 import java.io._
 import scala.collection.mutable._
-import scalax.data._
+import scalax.data.FastArrayBuffer
 
 /** Provides automatic resource management, equivalent to C#'s using, or C++
  * RAII. Idiomatic usage would be as follows (in fact FileExtras provides a

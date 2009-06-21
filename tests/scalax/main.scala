@@ -18,15 +18,11 @@ object ScalaxTests extends TestSuite("Scalax") {
 
 	// scalax.control
 	include(RefTests)
-	include(ConcurrentLinkedListTests)
 
 	// scalax.io
 	include(StreamHelpTests)
 	include(ResourcesTests)
 	include(FileHelpTests)
-
-	// scalax.logging
-	include(LoggingTests)
 }
 
 class TestScalax {

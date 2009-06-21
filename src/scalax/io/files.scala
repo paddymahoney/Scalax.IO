@@ -15,8 +15,8 @@ import java.io._
 import java.nio.channels._
 import java.nio.charset._
 import java.util.regex._
-import scalax.control._
-import scalax.data._
+import scalax.control.{ManagedResource,ManagedSequence}
+import scalax.data.IteratorSeq
 import scala.collection.mutable._
 
 /** Adds extra methods to File. */

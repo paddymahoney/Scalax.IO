@@ -13,7 +13,7 @@
 package scalax.io
 import java.io._
 import java.util.zip._
-import scalax.data._
+import scalax.data.IteratorHelp
 
 private[io] abstract class FetchIterator[T] extends Iterator[T] {
 
