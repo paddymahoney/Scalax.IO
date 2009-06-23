@@ -43,6 +43,7 @@ trait InputStream extends IOStream[InputStream] {
    /** Blocking call to write the contents of this stream to an output stream */
    def pumpTo(output : OutputStream) : Unit
    def >>>(output : OutputStream) = pumpTo(output)
+   def buffered : InputStream
 }
 
 trait ReaderStream extends IOStream[ReaderStream] {
@@ -55,6 +56,7 @@ trait ReaderStream extends IOStream[ReaderStream] {
    /** Blocking call to write the contents of this stream to an output stream. */
    def pumpTo(output : WriterStream) : Unit
    def >>>(output : WriterStream) = pumpTo(output)
+   def buffered : ReaderStream
 }
 
 trait OutputStream extends IOStream[OutputStream] {
@@ -69,6 +71,7 @@ trait OutputStream extends IOStream[OutputStream] {
    /** Blocking call to write the contents of the input stream to this stream */
    def pumpFrom(input : InputStream) : Unit = input >>> this
    def <<<(input : InputStream) = pumpFrom(input)
+   def buffered : OutputStream
 }
 
 
@@ -82,4 +85,5 @@ trait WriterStream extends IOStream[WriterStream] {
    /** Blocking call to write the contents of the input stream to this stream */
    def pumpFrom(input : ReaderStream) : Unit = input >>> this
    def <<<(input : ReaderStream) = pumpFrom(input)
+   def buffered : WriterStream
 }
