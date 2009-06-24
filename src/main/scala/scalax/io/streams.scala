@@ -17,9 +17,26 @@ import _root_.java.nio.charset.Charset
 
 object LineEndingStyle extends Enumeration {
    type LineEndingStyle = Value
-    val windows,unix,mac = Value
+   val WINDOWS, UNIX, MAC, ALL = Value
 
-    def current_platform_style = unix // TODO - Fix
+   def separator_for(style : Value) = style match {
+       case WINDOWS => "\r\n"
+       case UNIX    => "\n"
+       case MAC     => "\r"
+       case _       => "\n"  //Default to unix
+   } 
+
+   def constant_from_separator(sep : String) = sep match {
+       case "\r\n" => WINDOWS
+       case "\r"   => MAC
+       case "\n"   => UNIX
+       case _ => ALL //Default to any of them
+   }
+  
+   private val platform_line_separator = System.getProperty("line.separator", "\n")
+
+
+   def current_platform_style = constant_from_separator(platform_line_separator)
 }
 
 trait IOStream[T] {

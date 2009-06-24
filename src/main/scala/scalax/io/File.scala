@@ -21,11 +21,28 @@ trait File { self =>
     def /(path : String) : File
     def inputStream : InputStream
     def outputStream : OutputStream
-    def copyTo(dest : File) : Unit
-    def moveTo(dest : File) : Unit
+    def delete() : Boolean
+    def exists : Boolean
+    def renameTo(name : File) : Boolean
+
+    
+    def copyTo(dest : File) : Unit = {
+       for {
+          in <- ManagedResource(inputStream)
+          out <- ManagedResource(outputStream)
+       } in >>> out
+    }
+    def moveTo(dest : File) : Unit = {
+      dest.delete()
+      if(!renameTo(dest)) {
+        copyTo(dest)
+        if(!delete()) throw error("Delete after copy failed: "+self) //TODO - Use IOException!
+      }
+    }
 
 
-    def pathFrom(file : File) : String = if(path.startsWith(file.path)) path.drop(file.path.length)  else path
+    def pathFrom(file : File) : String = if(cannonicalPath.startsWith(file.cannonicalPath)) path.drop(file.cannonicalPath.length)  else cannonicalPath
+
     def /(glob : GlobMapper) = new Traversable[File] {
        def foreach[U](f : File => U) = self.tree.filter(x => glob.matches(x.pathFrom(self))).foreach(f)
     }
@@ -38,7 +55,7 @@ trait File { self =>
     def reader(implicit charset : Charset = Charset.forName("UTF-8")) = inputStream.reader(charset)
     def writer(implicit charset : Charset = Charset.forName("UTF-8")) = outputStream.writer(charset)
  
-    def lines(implicit charset : Charset = Charset.forName("UTF-8"))  : Traversable[String] = ManagedStreams.lines(reader(charset).buffered)
+    def lines(implicit charset : Charset = Charset.forName("UTF-8")) : Traversable[String] = ManagedStreams.lines(reader(charset).buffered)(LineEndingStyle.ALL) //TODO - Figure out implicit/defaults issue!!!
     def chars(implicit charset : Charset = Charset.forName("UTF-8")) : Traversable[Char] = ManagedStreams.chars(reader(charset).buffered)
     def bytes : Traversable[Byte] = ManagedStreams.bytes(inputStream.buffered)
     def slurp : Array[Byte] = for(in <- ManagedResource(inputStream)) yield in.slurp
@@ -54,20 +71,4 @@ trait File { self =>
     }
 }
 
-
-import java.{io => jio}
-
-abstract class JavaFileWrapper(file : jio.File) extends File {
-   def isDirectory = file.isDirectory()
-   def path = file.getPath
-   def cannonicalPath = file.getCanonicalPath
-   //def /(path : String) = new JavaFileWrapper(new jio.File(file, path))
-   //def copyTo(dest : File) : Unit = JavaFileHelp.copy(file,dest)
-   //def moveTo(dest : File) : Unit = JavaFileHelp.move(file,dest)
-   //def tree : Traversable[File]
-   def inputStream = new JavaInputStreamWrapper(new jio.FileInputStream(file))
-   def outputStream = new JavaOutputStreamWrapper(new jio.FileOutputStream(file))
-
-    
-}
 
