@@ -10,7 +10,6 @@ import _root_.scalax.resource.ManagedResource
 import java.{io => jio}
 
 trait JavaLocation extends Location {
-  type Location_T <: JavaLocation
   protected val file: jio.File
   final def canRead = file.canRead
   final def canWrite = file.canWrite
@@ -28,37 +27,38 @@ trait JavaLocation extends Location {
   final def path = file.getPath
   final def cannonicalPath = file.getCanonicalPath
   final def delete() = file.delete()
-  def renameTo(name: Location_T) = file.renameTo(name.file)
-}
-
-trait JavaDirectoryMixin extends JavaLocation {
-  def /(path : String) = new JavaPath(new jio.File(file, path))
-  def tree: Traversable[JavaLocation] = new Traversable[JavaLocation] {
-    def foreach[U](f: JavaLocation => U) = (new JFileTree(file)).foreach(jf => f(new JavaPath(jf)))
+  def renameTo(name: Location) = name match {
+    case jl: JavaLocation => file.renameTo(jl.file)
+    case _ => file.renameTo(new jio.File(name.path))
   }
-  def children: Traversable[JavaDirectory] = file.listFiles.filter(_.isDirectory).map(new JavaDirectory(_))
-  def files: Traversable[JavaFile] = file.listFiles.filter(_.isFile).map(new JavaFile(_))
-  def contents: Traversable[JavaLocation] = file.listFiles.map(new JavaPath(_))
+  final override def toString = path
 }
 
-trait JavaFileMixin extends JavaLocation {
+private[io] trait JavaDirectoryMixin extends DirectoryOpsMixin with JavaLocation {
+  def /(path : String) = new JavaPath(new jio.File(file, path))
+  def tree: Traversable[JavaPath] = new Traversable[JavaPath] {
+    def foreach[U](f: JavaPath => U) = (new JFileTree(file)).foreach(jf => f(new JavaPath(jf)))
+  }
+  def contents: Traversable[JavaPath] = file.listFiles.map(new JavaPath(_))
+}
+
+private[io] trait JavaFileMixin extends FileOpsMixin with JavaLocation {
   def length = file.length
   def inputStream = new JavaInputStreamWrapper(new jio.FileInputStream(file))
   def outputStream = new JavaOutputStreamWrapper(new jio.FileOutputStream(file))
 }
 
 final class JavaDirectory(protected val file: jio.File) extends Directory with JavaDirectoryMixin {
-  type Location_T = JavaDirectory
   def create = file.mkdirs
+  def children: Traversable[JavaDirectory] = file.listFiles.filter(_.isDirectory).map(new JavaDirectory(_))
+  def files: Traversable[JavaFile] = file.listFiles.filter(_.isFile).map(new JavaFile(_))
 }
 
 final class JavaFile(protected val file: jio.File) extends File with JavaFileMixin {
-  type Location_T = JavaFile
   def create() = file.createNewFile()
 }
 
 final class JavaPath(protected val file: jio.File) extends Path with JavaFileMixin with JavaDirectoryMixin {
-  type Location_T = JavaPath
   def asDirectory = {
     if (isDirectory || !exists) new JavaDirectory(file)
     else throw new UnsupportedOperationException("this Path is already a file, cannot convert to a directory")
@@ -82,7 +82,7 @@ object FileConstants {
   // EE: I made tmpDir a def rather than a lazy val because:
   //     (1) it returns a mutable object, and
   //     (2) someone could change the property "java.io.tmpdir"
-  //     so you really want a new object every time
+  //     so I think you really want a new object every time
   def tmpDir = new JavaDirectory(new jio.File(System.getProperty("java.io.tmpdir")))
 }
 

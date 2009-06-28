@@ -25,8 +25,7 @@ class GlobMapper(pattern : String) {
 /**
  * A point on a file system, such as a file, directory, or abstract pathname
  */
-trait Location {
-  type Location_T <: Location
+trait Location { self =>
   def canRead: Boolean
   def canWrite: Boolean
   def exists: Boolean
@@ -53,7 +52,7 @@ trait Location {
   def path: String
   def cannonicalPath: String
   def delete(): Boolean
-  def renameTo(name: Location_T): Boolean
+  def renameTo(name: Location): Boolean
   /**
    * @return path to this <code>Location</code> relative to the specified <code>Directory</code>
    */
@@ -64,10 +63,7 @@ trait Location {
   }
 }
 
-trait Directory extends Location { self =>
-  type Location_T <: Directory
-  /** the full contents of this directory tree */
-  def tree: Traversable[Location]
+trait Directory extends Location with DirectoryOpsMixin { self =>
   /** the subdirectories immediately under this directory */
   def children: Traversable[Directory]
   /** the <code>File</code>s within this <code>Directory</code>*/
@@ -80,19 +76,26 @@ trait Directory extends Location { self =>
   def create: Boolean
   final def isDirectory = true
   final def isFile = false
+  protected def asDirectory = self
+}
 
+private[io] trait DirectoryOpsMixin extends Location { self =>
+  protected def asDirectory: Directory
   def /(path: String): Path
   def /(glob: GlobMapper) = new Traversable[Location] {
-     def foreach[U](f: Location => U) = self.tree.filter(x => glob.matches(x.pathFrom(self))).foreach(f)
+    def foreach[U](f: Location => U) =
+      self.tree.filter(x => glob.matches(x.pathFrom(self.asDirectory))).foreach(f)
   }
   def /(regex: Regex) = new Traversable[Location] {
-     def foreach[U](f: Location => U) = self.tree.filter( x => regex.pattern.matcher(x.pathFrom(self)).matches).foreach(f)
+    def foreach[U](f: Location => U) =
+      self.tree.filter( x => regex.pattern.matcher(x.pathFrom(self.asDirectory)).matches).foreach(f)
   }
+  /** the full contents of this directory tree */
+  def tree: Traversable[Location]
 }
 
 //TODO - Complete this interface!!!
-trait File extends Location { self =>
-  type Location_T <: File
+trait File extends Location with FileOpsMixin { self =>
   final def isDirectory = false
   final def isFile = true
   /**
@@ -106,10 +109,14 @@ trait File extends Location { self =>
    * @return true if a file was created, false if not
    */
   def create(): Boolean
-  def inputStream: InputStream
-  def outputStream: OutputStream
 //  def copyTo(dest: File): Unit
 //  def moveTo(dest: Location): Unit
+
+}
+
+private[io] trait FileOpsMixin extends Location { self =>
+  def inputStream: InputStream
+  def outputStream: OutputStream
 //TODO: make charset a constant somewhere instead of using forName repeated
   def reader(implicit charset : Charset = Charset.forName("UTF-8")) = inputStream.reader(charset)
   def writer(implicit charset : Charset = Charset.forName("UTF-8")) = outputStream.writer(charset)
@@ -131,8 +138,7 @@ trait File extends Location { self =>
 }
 
 
-trait Path extends Location {
-  type Location_T <: Path
+trait Path extends Location with DirectoryOpsMixin with FileOpsMixin { self =>
   /**
    * Convert this <code>Path</code> into a <code>Directory</code<
    * @return a <code>Directory</code> object representing this path
@@ -159,6 +165,22 @@ trait Path extends Location {
    * @return <code>Some(directory)</code> if a directory was created, otherwise <code>None</code>
    */
   def createNewDirectory(): Option[Directory]
+
+  // directory operations...maybe this should be in a mixin instead
+  /** the full contents of this directory tree */
+  def tree: Traversable[Path]
+  /** */
+  def contents: Traversable[Path]
+
+  // file operations...maybe a mixin???
+  /**
+   * the length of the this <code>File</code> in bytes
+   * @todo what should this return if the file does not exist?  java.io.File will return 0L,
+   *       the same as for an empty file.
+   */
+  def length: Long
+  def inputStream: InputStream
+  def outputStream: OutputStream
 }
 
 
