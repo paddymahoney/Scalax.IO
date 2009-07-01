@@ -44,8 +44,13 @@ private[io] trait JavaDirectoryMixin extends DirectoryOpsMixin with JavaLocation
 
 private[io] trait JavaFileMixin extends FileOpsMixin with JavaLocation {
   def length = file.length
-  def inputStream = new JavaInputStreamWrapper(new jio.FileInputStream(file))
-  def outputStream = new JavaOutputStreamWrapper(new jio.FileOutputStream(file))
+  def inputStream = {
+    // there aren't any read options other than Read, which really is implied
+    new JavaInputStreamWrapper(new jio.FileInputStream(file))
+  }
+  def outputStream(opt: WriteOption = WriteOption.defaultWriteOption): OutputStream = {
+    JavaFileOutputStreamWrapper(opt, file)
+  }
 }
 
 final class JavaDirectory(protected val file: jio.File) extends Directory with JavaDirectoryMixin {

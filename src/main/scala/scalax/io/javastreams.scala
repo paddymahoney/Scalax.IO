@@ -101,7 +101,7 @@ private[io] object JavaStreamHelp {
 }
 
 
-class JavaInputStreamWrapper(s : jio.InputStream) extends InputStream {
+class JavaInputStreamWrapper(protected val s: jio.InputStream) extends InputStream {
    /** Returns a buffered version of this input stream */
    def buffered : InputStream = new JavaInputStreamWrapper(new jio.BufferedInputStream(s)) {
        override def buffered = this
@@ -149,13 +149,14 @@ class JavaReaderStreamWrapper(s : jio.Reader) extends ReaderStream {
    }
 }
 
-class JavaOutputStreamWrapper(s : jio.OutputStream) extends OutputStream {
+class JavaOutputStreamWrapper(protected val s: jio.OutputStream) extends OutputStream {
    /** Returns a buffered version of this stream */
    def buffered : OutputStream = new JavaOutputStreamWrapper(new jio.BufferedOutputStream(s)) {
        override def buffered = this
    }
    /** Closes this stream */
    def close() : Unit = s.close()
+   
   /**  Write the sequence of bytes into this output stream*/
    def write(input : Iterable[Byte]) : Unit = {
       for(b <- input) {
@@ -169,6 +170,28 @@ class JavaOutputStreamWrapper(s : jio.OutputStream) extends OutputStream {
    /** Returns a reader for this InputStream */
    def writer(implicit charset : Charset = Charset.forName("UTF-8")) : WriterStream = new JavaWriterStreamWrapper(new jio.OutputStreamWriter(s, charset))
 }
+
+object JavaFileOutputStreamWrapper {
+  def apply(opt: WriteOption, file: jio.File) = {
+    if (file.exists()) {
+      if (!opt.openExisting) throw new FileAlreadyExists(file.getName())
+    } else {
+      if (!opt.createNew) throw new FileDoesNotExist(file.getName())
+    }
+    val s = new jio.FileOutputStream(file, opt.append)
+    new JavaFileOutputStreamWrapper(opt, file, s)
+  }
+}
+
+class JavaFileOutputStreamWrapper protected (val opt: WriteOption, protected val file: jio.File, override protected val s: jio.FileOutputStream) 
+      extends JavaOutputStreamWrapper(s) {
+  override def close(): Unit = {
+    super.close()
+    if (opt.deleteOnClose) {
+      if (!file.delete()) throw new FileDeletionFailed(file.getName())
+    }
+  }
+} 
 
 class JavaWriterStreamWrapper(s : jio.Writer) extends WriterStream {
    /** Returns a buffered version of this stream */

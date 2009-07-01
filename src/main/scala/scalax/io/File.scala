@@ -99,13 +99,7 @@ trait File extends Location with FileOpsMixin { self =>
   final def isDirectory = false
   final def isFile = true
   /**
-   * the length of the this <code>File</code> in bytes
-   * @todo what should this return if the file does not exist?  java.io.File will return 0L,
-   *       the same as for an empty file.
-   */
-  def length: Long
-  /**
-   * atomically create new empty Location with this pathname if one does not exist
+   * atomically create new empty File with this pathname if one does not exist
    * @return true if a file was created, false if not
    */
   def create(): Boolean
@@ -116,13 +110,19 @@ trait File extends Location with FileOpsMixin { self =>
 
 private[io] trait FileOpsMixin extends Location { self =>
   def inputStream: InputStream
-  def outputStream: OutputStream
+  def outputStream(opt: WriteOption = WriteOption.defaultWriteOption): OutputStream
+  /**
+   * the length of the this <code>File</code> in bytes
+   * @todo what should this return if the file does not exist?  java.io.File will return 0L,
+   *       the same as for an empty file.
+   */
+  def length: Long
 //TODO: make charset a constant somewhere instead of using forName repeated
-  def reader(implicit charset : Charset = Charset.forName("UTF-8")) = inputStream.reader(charset)
-  def writer(implicit charset : Charset = Charset.forName("UTF-8")) = outputStream.writer(charset)
+  def reader(implicit charset: Charset = Charset.forName("UTF-8")) = inputStream.reader(charset)
+  def writer(implicit charset: Charset = Charset.forName("UTF-8")) = outputStream().writer(charset)
 
-  def lines(implicit charset : Charset = Charset.forName("UTF-8")) : Traversable[String] = ManagedStreams.lines(reader(charset).buffered)(LineEndingStyle.ALL) //TODO - Figure out implicit/defaults issue!!!
-  def chars(implicit charset : Charset = Charset.forName("UTF-8")) : Traversable[Char] = ManagedStreams.chars(reader(charset).buffered)
+  def lines(implicit charset: Charset = Charset.forName("UTF-8")) : Traversable[String] = ManagedStreams.lines(reader(charset).buffered)(LineEndingStyle.ALL) //TODO - Figure out implicit/defaults issue!!!
+  def chars(implicit charset: Charset = Charset.forName("UTF-8")) : Traversable[Char] = ManagedStreams.chars(reader(charset).buffered)
   def bytes : Traversable[Byte] = ManagedStreams.bytes(inputStream.buffered)
   def slurp : Array[Byte] = for(in <- ManagedResource(inputStream)) yield in.slurp
 
@@ -132,7 +132,7 @@ private[io] trait FileOpsMixin extends Location { self =>
   def write(input : String)(implicit charset : Charset = Charset.forName("UTF-8")) : Unit = for(out <- ManagedResource(writer)) {
         out.writeChars(input)
   }
-  def write(input : Array[Byte]) : Unit = for(out <- ManagedResource(outputStream)) {
+  def write(input : Array[Byte]) : Unit = for(out <- ManagedResource(outputStream())) {
         out.write(input)()
   }
 }
@@ -179,8 +179,6 @@ trait Path extends Location with DirectoryOpsMixin with FileOpsMixin { self =>
    *       the same as for an empty file.
    */
   def length: Long
-  def inputStream: InputStream
-  def outputStream: OutputStream
 }
 
 
