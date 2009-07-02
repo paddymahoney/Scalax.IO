@@ -176,6 +176,14 @@ class TestFile {
   //   (f) NewOrAppend
   //       - sucesss: an existig file is opened and appended
   //       - success: a new file is created and written to
+  @Test def newOrAppendWithExisting() {
+    withExistingFile(Array(1.toByte)) { existingFile =>
+      val f = File(existingFile.getName())
+      val s = f.outputStream(WriteOption.NewOrAppend)
+      try { s.write(2.toByte) } finally { s.close() }
+      checkContents(existingFile, Array(1.toByte, 2.toByte))
+    }
+  }
 }
 
 //class TestDirectory {
