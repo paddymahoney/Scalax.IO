@@ -184,6 +184,14 @@ class TestFile {
       checkContents(existingFile, Array(1.toByte, 2.toByte))
     }
   }
+  @Test def newOrAppendWithoutExisting() {
+    withNonExistentFile { nonExistentFile =>
+      val f = File(nonExistentFile.getName())
+      val s = f.outputStream(WriteOption.NewOrAppend)
+      try { s.write(1.toByte) } finally { s.close() }
+      checkContents(nonExistentFile, Array(1.toByte))
+    }
+  }
 }
 
 //class TestDirectory {
