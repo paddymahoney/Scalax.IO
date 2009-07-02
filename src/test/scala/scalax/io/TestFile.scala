@@ -26,6 +26,12 @@ class TestFile {
       }
     }
   }
+  def withExistingDirectory(test: jio.File => Unit): Unit = {
+    withNonExistentFile { tmpDir =>
+      assertTrue("setup failed - could not make a new directory", tmpDir.mkdir())
+      test(tmpDir)
+    }
+  }
   //1. Create a file for a file that exists
   @Test def testCreateFileWhenAlreadyExists() {
     withExistingFile { tmpFile =>
@@ -42,6 +48,11 @@ class TestFile {
     }
   }
   //3. Try to create a file with a pathname representing an existing directory, expect failure
+  @Test(expected=classOf[IllegalArgumentException]) def testAttemptCreateFileThatIsExistingDirectory() {
+    withExistingDirectory { existingDir =>
+      File(existingDir.getName())
+    }
+  }
   //4. Test write options for both success and failure:
   //   (a) NewFile
   //       - success:  A file that does not previously exist is created
