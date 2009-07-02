@@ -161,9 +161,16 @@ class TestFile {
     withExistingFile(Array(1.toByte)) { existingFile =>
       val f = File(existingFile.getName())
       val s = f.outputStream(WriteOption.NewOrTruncate)
-      s.write(2.toByte)
-      s.close()
+      try { s.write(2.toByte) } finally { s.close() }
       checkContents(existingFile, Array(2.toByte))
+    }
+  }
+  @Test def newOrTruncateWithoutExisting() {
+    withNonExistentFile { nonExistentFile =>
+      val f = File(nonExistentFile.getName())
+      val s  = f.outputStream(WriteOption.NewOrTruncate)
+      try { s.write(2.toByte) } finally { s.close() }
+      checkContents(nonExistentFile, Array(2.toByte))
     }
   }
   //   (f) NewOrAppend
