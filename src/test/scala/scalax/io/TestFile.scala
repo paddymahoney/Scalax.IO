@@ -9,9 +9,14 @@ import _root_.java.{io => jio}
 
 class TestFile {
   val cwd = new jio.File(System.getProperty("user.dir"))
-  def withExistingFile(test: jio.File => Unit): Unit = {
+  val empty = Array.empty[Byte]
+  def withExistingFile(contents: Array[Byte] = empty)(test: jio.File => Unit): Unit = {
     withNonExistentFile { tmpFile => 
       assertTrue("setup failed - could not create new test file", tmpFile.createNewFile())
+      if (contents.length > 0) {
+	val s = new jio.FileOutputStream(tmpFile)
+	try { s.write(contents) } finally { s.close() }
+      }
       test(tmpFile)
     }
   }
@@ -55,7 +60,7 @@ class TestFile {
   }
   //1. Create a file for a file that exists
   @Test def testCreateFileWhenAlreadyExists() {
-    withExistingFile { tmpFile =>
+    withExistingFile() { tmpFile =>
       val f = File(tmpFile.getName())
       assertTrue("failed to recognize existence of file", f.exists)
       assertFalse("f.create() should have returned false because file already exists", f.create())
@@ -82,15 +87,12 @@ class TestFile {
     withNonExistentFile { tmpFile =>
       val f = File(tmpFile.getName())
       val s = f.outputStream(WriteOption.NewFile)
-      try {
-	s.write(1.asInstanceOf[Byte])
-      } finally {
-	s.close()
-      }
+      try { s.write(1.toByte) } finally { s.close() }
+      checkContents(tmpFile, Array(1.toByte))
     }
   }
   @Test(expected=classOf[FileAlreadyExists]) def createNewFileOutputStreamFail() {
-    withExistingFile { existingFile =>
+    withExistingFile() { existingFile =>
       val f = File(existingFile.getName())
       val s = f.outputStream(WriteOption.NewFile)
       s.close()  //just in case we get this far
@@ -103,13 +105,13 @@ class TestFile {
     withNonExistentFile { file =>
       val f = File(file.getName())
       val s = f.outputStream(WriteOption.NewTempFile)
-      s.write(1.asInstanceOf[Byte])
+      s.write(1.toByte)
       s.close()
       assertFalse("the file should have been deleted when the output stream was closed", f.exists)
     }
   }
   @Test(expected=classOf[FileAlreadyExists]) def createNewTempFileOutputStreamFail() {
-    withExistingFile { existingFile =>
+    withExistingFile() { existingFile =>
       val f = File(existingFile.getName())
       val s = f.outputStream(WriteOption.NewTempFile)
       s.close() // just in case we get this far
@@ -119,15 +121,11 @@ class TestFile {
   //       - success: an existing file is opened and successfully appended to
   //       - failure: attempting to append to a file that doesn't exist
   @Test def appendToExistingFile() {
-    withExistingFile { existingFile =>
-      val js = new jio.FileOutputStream(existingFile)
-      js.write(1) // write a single byte
-      js.close()
+    withExistingFile(Array(1.toByte)) { existingFile =>
       val f = File(existingFile.getName())
       val origLen = f.length
       val s = f.outputStream(WriteOption.AppendToExisting)
-      s.write(2.asInstanceOf[Byte])
-      s.close()
+      try { s.write(2.toByte) } finally { s.close() }
       checkContents(existingFile, Array(1.toByte, 2.toByte))
     }
   }
@@ -142,14 +140,10 @@ class TestFile {
   //       - success: an existing file is opened and truncated
   //       - failure: the file does not already exist
   @Test def truncateExistingFile() {
-    withExistingFile { existingFile =>
+    withExistingFile(Array(1.toByte)) { existingFile =>
       val f = File(existingFile.getName())
-      val js = new jio.FileOutputStream(existingFile)
-      js.write(1.toByte)
-      js.close()
       val s = f.outputStream(WriteOption.TruncateExisting)
-      s.write(2.toByte)
-      s.close()
+      try { s.write(2.toByte) } finally { s.close() }
       checkContents(existingFile, Array(2.toByte))
     }
   }
@@ -164,10 +158,7 @@ class TestFile {
   //       - success: an existing file is opened and truncated
   //       - success: a new file is created and written to
   @Test def newOrTruncateWithExisting() {
-    withExistingFile { existingFile =>
-      val js = new jio.FileOutputStream(existingFile)
-      js.write(1)
-      js.close()
+    withExistingFile(Array(1.toByte)) { existingFile =>
       val f = File(existingFile.getName())
       val s = f.outputStream(WriteOption.NewOrTruncate)
       s.write(2.toByte)
@@ -178,7 +169,6 @@ class TestFile {
   //   (f) NewOrAppend
   //       - sucesss: an existig file is opened and appended
   //       - success: a new file is created and written to
-  //    
 }
 
 //class TestDirectory {
