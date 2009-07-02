@@ -94,6 +94,10 @@ private[io] trait DirectoryOpsMixin extends Location { self =>
   def tree: Traversable[Location]
 }
 
+object File {
+  def apply(name: String): File = JavaFile(name)
+}
+
 //TODO - Complete this interface!!!
 trait File extends Location with FileOpsMixin { self =>
   final def isDirectory = false

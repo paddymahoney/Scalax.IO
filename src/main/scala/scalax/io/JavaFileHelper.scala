@@ -56,10 +56,21 @@ private[io] trait JavaFileMixin extends FileOpsMixin with JavaLocation {
 final class JavaDirectory(protected val file: jio.File) extends Directory with JavaDirectoryMixin {
   def create = file.mkdirs
   def children: Traversable[JavaDirectory] = file.listFiles.filter(_.isDirectory).map(new JavaDirectory(_))
-  def files: Traversable[JavaFile] = file.listFiles.filter(_.isFile).map(new JavaFile(_))
+  def files: Traversable[JavaFile] = file.listFiles.filter(_.isFile).map(JavaFile(_))
 }
 
-final class JavaFile(protected val file: jio.File) extends File with JavaFileMixin {
+object JavaFile {
+  def apply(name: String): JavaFile = {
+    val f = new jio.File(name)
+    apply(f)
+  }
+  def apply(file: jio.File): JavaFile = {
+    if (file.exists() && !file.isFile()) throw new IllegalArgumentException("Already exists and is not a file: " + file.getName())
+    new JavaFile(file)
+  }
+}
+
+final class JavaFile private (protected val file: jio.File) extends File with JavaFileMixin {
   def create() = file.createNewFile()
 }
 
@@ -69,15 +80,15 @@ final class JavaPath(protected val file: jio.File) extends Path with JavaFileMix
     else throw new UnsupportedOperationException("this Path is already a file, cannot convert to a directory")
   }
   def asFile = {
-    if (isFile || !exists) new JavaFile(file)
+    if (isFile || !exists) JavaFile(file)
     else throw new UnsupportedOperationException("this Path is already a directory, cannot convert to a file")
   }
   def asFileOrDirectory: Option[Either[JavaFile, JavaDirectory]] = {
     if (!exists) None
     else if (isDirectory) Some(Right(new JavaDirectory(file)))
-    else Some(Left(new JavaFile(file)))
+    else Some(Left(JavaFile(file)))
   }
-  def createNewFile() = if (file.createNewFile()) Some(new JavaFile(file)) else None
+  def createNewFile() = if (file.createNewFile()) Some(JavaFile(file)) else None
   def createNewDirectory() = if (file.mkdirs()) Some(new JavaDirectory(file)) else None
   def isDirectory = file.isDirectory
   def isFile = file.isFile
