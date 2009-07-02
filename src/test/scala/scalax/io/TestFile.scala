@@ -97,7 +97,7 @@ class TestFile {
   //   (c) AppendToExisting
   //       - success: an existing file is opened and successfully appended to
   //       - failure: attempting to append to a file that doesn't exist
-  //       - failure: the path exists but is a directory
+  //       - failure: the path exists but is a directory - not necessary, creation of File failure already tested
   @Test def appendToExistingFile() {
     withExistingFile { existingFile =>
       val js = new jio.FileOutputStream(existingFile)
@@ -112,7 +112,7 @@ class TestFile {
       assertEquals("expected length to increase", newLen, origLen + 1L)
     }
   }
-  @Test(expected=classOf[FileDoesNotExist]) def appendToExistingFileFail1() {
+  @Test(expected=classOf[FileDoesNotExist]) def appendToExistingFileFail() {
     withNonExistentFile { nonExistentFile =>
       val f = File(nonExistentFile.getName())
       val s = f.outputStream(WriteOption.AppendToExisting)
