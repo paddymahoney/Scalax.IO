@@ -209,6 +209,12 @@ class TestFile {
       assertEquals("length of empty file should have been zero", f.length, 0L)
     }
   }
+  @Test def fileLengthOfNonExistentFile() {
+    withNonExistentFile { nonExistentFile =>
+      val f = File(nonExistentFile.getName())
+      assertEquals("length of non-existent file should have been zero", f.length, 0L)
+    }
+  }
 }
 
 //class TestDirectory {
