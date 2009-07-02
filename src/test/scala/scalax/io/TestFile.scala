@@ -97,7 +97,6 @@ class TestFile {
   //   (c) AppendToExisting
   //       - success: an existing file is opened and successfully appended to
   //       - failure: attempting to append to a file that doesn't exist
-  //       - failure: the path exists but is a directory - not necessary, creation of File failure already tested
   @Test def appendToExistingFile() {
     withExistingFile { existingFile =>
       val js = new jio.FileOutputStream(existingFile)
@@ -122,7 +121,22 @@ class TestFile {
   //   (d) TruncateExisting
   //       - success: an existing file is opened and truncated
   //       - failure: the file does not already exist
-  //       - failure: the path exists but is a directory
+  @Test def truncateExistingFile() {
+    withExistingFile { existingFile =>
+      val f = File(existingFile.getName())
+      val js = new jio.FileOutputStream(existingFile)
+      js.write(1.asInstanceOf[Byte])
+      js.close()
+      val s = f.outputStream(WriteOption.TruncateExisting)
+      s.write(2.asInstanceOf[Byte])
+      s.close()
+      val is = new jio.FileInputStream(existingFile)
+      val b = is.read()
+      is.close()
+      assertEquals("the byte read was not the byte written", b, 2)
+      assertEquals("the file is the wrong length", f.length, 1L)
+    }
+  }
   //   (e) NewOrTruncate
   //       - success: an existing file is opened and truncated
   //       - success: a new file is created and written to
