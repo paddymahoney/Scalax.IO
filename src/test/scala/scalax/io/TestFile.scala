@@ -137,6 +137,13 @@ class TestFile {
       assertEquals("the file is the wrong length", f.length, 1L)
     }
   }
+  @Test(expected=classOf[FileDoesNotExist]) def truncateExistingFileFail() {
+    withNonExistentFile { nonExistentFile =>
+      val f = File(nonExistentFile.getName())
+      val s = f.outputStream(WriteOption.TruncateExisting)
+      s.close() // just in case
+    }
+  }
   //   (e) NewOrTruncate
   //       - success: an existing file is opened and truncated
   //       - success: a new file is created and written to
