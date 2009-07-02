@@ -36,13 +36,9 @@ class TestFile {
   }
   //2. Create a file that doesn't exist
   @Test def testCreateFileWhenDoesNotExist() {
-    val baseFile = new jio.File(cwd, "testCreateFileWhenDoesNotExist.tmp")
-    try {
-      assertFalse("file that should not exist does, clean out test directory", baseFile.exists())
-      val f = File(baseFile.getName())
+    withNonExistentFile { tmpFile =>
+      val f = File(tmpFile.getName())
       assertTrue("file creation failed", f.create())
-    } finally {
-      if (baseFile.exists()) baseFile.delete()
     }
   }
   //3. Try to create a file with a pathname representing an existing directory, expect failure
@@ -51,16 +47,14 @@ class TestFile {
   //       - success:  A file that does not previously exist is created
   //       - failure:  The file already exists
   @Test def createNewFile() {
-    val baseFile = new jio.File(cwd, "createNewFile.tmp")
-    try {
-      assertFalse("file already exists, clean junk out of directory", baseFile.exists())
-      val f = File(baseFile.getName())
-      assertFalse("file reports that it exists when it does not", f.exists)
-      assertTrue("failed to create file: " + f.name, f.create())
-      assertTrue("success reported for file creation but file does not exist", baseFile.exists())
-      assertTrue("successfully created file but it reports that it does not exist", f.exists)
-    } finally {
-      if (baseFile.exists()) baseFile.delete()
+    withNonExistentFile { tmpFile =>
+      val f = File(tmpFile.getName())
+      val s = f.outputStream(WriteOption.NewFile)
+      try {
+	s.write(1.asInstanceOf[Byte])
+      } finally {
+	s.close()
+      }
     }
   }
   //   (b) NewTempFile
