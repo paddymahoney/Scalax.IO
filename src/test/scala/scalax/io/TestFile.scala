@@ -50,7 +50,8 @@ class TestFile {
       else if (expected(i) == buf(i)) compare(i + 1)
       else false
     }
-    assertTrue("the file did not have the expected contents", compare(0))
+    assertTrue("the file did not have the expected contents: expected: " +
+	       expected.deepMkString(", ") + " actual: " + buf.slice(0, r).deepMkString(", "), compare(0))
   }
   //1. Create a file for a file that exists
   @Test def testCreateFileWhenAlreadyExists() {
@@ -125,10 +126,9 @@ class TestFile {
       val f = File(existingFile.getName())
       val origLen = f.length
       val s = f.outputStream(WriteOption.AppendToExisting)
-      s.write(1.asInstanceOf[Byte])
+      s.write(2.asInstanceOf[Byte])
       s.close()
-      val newLen = f.length
-      assertEquals("expected length to increase", newLen, origLen + 1L)
+      checkContents(existingFile, Array(1.toByte, 2.toByte))
     }
   }
   @Test(expected=classOf[FileDoesNotExist]) def appendToExistingFileFail() {
@@ -145,16 +145,12 @@ class TestFile {
     withExistingFile { existingFile =>
       val f = File(existingFile.getName())
       val js = new jio.FileOutputStream(existingFile)
-      js.write(1.asInstanceOf[Byte])
+      js.write(1.toByte)
       js.close()
       val s = f.outputStream(WriteOption.TruncateExisting)
-      s.write(2.asInstanceOf[Byte])
+      s.write(2.toByte)
       s.close()
-      val is = new jio.FileInputStream(existingFile)
-      val b = is.read()
-      is.close()
-      assertEquals("the byte read was not the byte written", b, 2)
-      assertEquals("the file is the wrong length", f.length, 1L)
+      checkContents(existingFile, Array(2.toByte))
     }
   }
   @Test(expected=classOf[FileDoesNotExist]) def truncateExistingFileFail() {
