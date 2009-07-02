@@ -57,7 +57,7 @@ class TestFile {
   //   (a) NewFile
   //       - success:  A file that does not previously exist is created
   //       - failure:  The file already exists
-  @Test def createNewFile() {
+  @Test def createNewFileOutputStream() {
     withNonExistentFile { tmpFile =>
       val f = File(tmpFile.getName())
       val s = f.outputStream(WriteOption.NewFile)
@@ -66,6 +66,13 @@ class TestFile {
       } finally {
 	s.close()
       }
+    }
+  }
+  @Test(expected=classOf[FileAlreadyExists]) def createNewFileOutputStreamFail() {
+    withExistingFile { existingFile =>
+      val f = File(existingFile.getName())
+      val s = f.outputStream(WriteOption.NewFile)
+      s.close()  //just in case we get this far
     }
   }
   //   (b) NewTempFile
