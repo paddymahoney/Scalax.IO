@@ -32,6 +32,26 @@ class TestFile {
       test(tmpDir)
     }
   }
+  def checkContents(file: jio.File, expected: Array[Byte]) {
+    val is = new jio.FileInputStream(file)
+    val len = expected.length + 10
+    val buf = new Array[Byte](len)
+    def read(pos: Int): Int = {
+      if (pos == len) len
+      else {
+	val r = is.read(buf, pos, (len - pos))
+	if (r < 0) pos else read(pos + r)
+      }
+    }
+    val r = try { read(0) } finally { is.close() }
+    assertEquals("the file did not have the expected length", r, expected.length)
+    def compare(i: Int): Boolean = {
+      if (i == r) true
+      else if (expected(i) == buf(i)) compare(i + 1)
+      else false
+    }
+    assertTrue("the file did not have the expected contents", compare(0))
+  }
   //1. Create a file for a file that exists
   @Test def testCreateFileWhenAlreadyExists() {
     withExistingFile { tmpFile =>
@@ -147,11 +167,21 @@ class TestFile {
   //   (e) NewOrTruncate
   //       - success: an existing file is opened and truncated
   //       - success: a new file is created and written to
-  //       - failure: the path exists but is a directory
+  @Test def newOrTruncateWithExisting() {
+    withExistingFile { existingFile =>
+      val js = new jio.FileOutputStream(existingFile)
+      js.write(1)
+      js.close()
+      val f = File(existingFile.getName())
+      val s = f.outputStream(WriteOption.NewOrTruncate)
+      s.write(2.toByte)
+      s.close()
+      checkContents(existingFile, Array(2.toByte))
+    }
+  }
   //   (f) NewOrAppend
   //       - sucesss: an existig file is opened and appended
   //       - success: a new file is created and written to
-  //       - failure: the path exists but is a directory
   //    
 }
 
