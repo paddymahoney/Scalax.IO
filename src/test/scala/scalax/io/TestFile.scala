@@ -112,6 +112,13 @@ class TestFile {
       assertEquals("expected length to increase", newLen, origLen + 1L)
     }
   }
+  @Test(expected=classOf[FileDoesNotExist]) def appendToExistingFileFail1() {
+    withNonExistentFile { nonExistentFile =>
+      val f = File(nonExistentFile.getName())
+      val s = f.outputStream(WriteOption.AppendToExisting)
+      s.close()
+    }
+  }
   //   (d) TruncateExisting
   //       - success: an existing file is opened and truncated
   //       - failure: the file does not already exist
