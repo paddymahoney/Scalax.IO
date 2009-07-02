@@ -203,6 +203,12 @@ class TestFile {
       assertEquals("file returned the wrong length", f.length, contents.length.toLong)
     }
   }
+  @Test def fileLengthOfEmptyFile() {
+    withExistingFile() { existingFile =>
+      val f = File(existingFile.getName())
+      assertEquals("length of empty file should have been zero", f.length, 0L)
+    }
+  }
 }
 
 //class TestDirectory {
