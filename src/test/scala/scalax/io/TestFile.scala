@@ -86,7 +86,14 @@ class TestFile {
       s.close()
       assertFalse("the file should have been deleted when the output stream was closed", f.exists)
     }
-  } 
+  }
+  @Test(expected=classOf[FileAlreadyExists]) def createNewTempFileOutputStreamFail() {
+    withExistingFile { existingFile =>
+      val f = File(existingFile.getName())
+      val s = f.outputStream(WriteOption.NewTempFile)
+      s.close() // just in case we get this far
+    }
+  }
   //   (c) AppendToExisting
   //       - success: an existing file is opened and successfully added to
   //       - failure: attempting to append to a file that doesn't exist
