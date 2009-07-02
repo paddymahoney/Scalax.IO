@@ -192,6 +192,17 @@ class TestFile {
       checkContents(nonExistentFile, Array(1.toByte))
     }
   }
+  // 5. File.length
+  //   - when file has contents
+  //   - when file is empty
+  //   - when file does not exist
+  @Test def fileLengthWithContents() {
+    val contents = Array(1.toByte, 2.toByte, 3.toByte)
+    withExistingFile(contents) { existingFile =>
+      val f = File(existingFile.getName())
+      assertEquals("file returned the wrong length", f.length, contents.length.toLong)
+    }
+  }
 }
 
 //class TestDirectory {
