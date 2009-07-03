@@ -12,8 +12,7 @@
 
 package scalax.io
 
-import _root_.java.nio.charset.Charset
-
+import scala.io.Codec
 
 object LineEndingStyle extends Enumeration {
    type LineEndingStyle = Value
@@ -56,7 +55,7 @@ trait InputStream extends IOStream[InputStream] {
    /** Eagerly loaded array of bytes from the rest of this input stream */
    def slurp : Array[Byte]
    /** Returns a reader for this InputStream */
-   def reader(implicit charset : Charset = Charset.forName("UTF-8")) : ReaderStream
+   def reader(implicit codec: Codec = Codec.default) : ReaderStream
    /** Blocking call to write the contents of this stream to an output stream */
    def pumpTo(output : OutputStream) : Unit
    def >>>(output : OutputStream) = pumpTo(output)
@@ -78,16 +77,16 @@ trait ReaderStream extends IOStream[ReaderStream] {
 
 trait OutputStream extends IOStream[OutputStream] {
    /**  Write the sequence of bytes into this output stream*/
-   def write(input : Iterable[Byte]) : Unit
+   def write(input: Iterable[Byte]) : Unit
    /** Writes a single byte to this stream */
-   def write(input : Byte) : Unit
+   def write(input: Byte) : Unit
    /** Writes an number of bytes defined by length, found in input to this stream starting at a given offset */
-   def write(input : Array[Byte])(length : Int = input.length, offset : Int = 0) : Unit
+   def write(input: Array[Byte])(length: Int = input.length, offset: Int = 0) : Unit
    /** Returns a reader for this InputStream */
-   def writer(implicit charset : Charset = Charset.forName("UTF-8")) : WriterStream
+   def writer(implicit codec: Codec = Codec.default) : WriterStream
    /** Blocking call to write the contents of the input stream to this stream */
-   def pumpFrom(input : InputStream) : Unit = input >>> this
-   def <<<(input : InputStream) = pumpFrom(input)
+   def pumpFrom(input: InputStream) : Unit = input >>> this
+   def <<<(input: InputStream) = pumpFrom(input)
    def buffered : OutputStream
 }
 

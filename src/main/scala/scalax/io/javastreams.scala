@@ -13,7 +13,7 @@
 package scalax.io
 
 import _root_.java.{io => jio}
-import _root_.java.nio.charset.Charset
+import scala.io.Codec
 
 private[io] abstract class FetchIterator[T] extends Iterator[T] {
 
@@ -113,9 +113,9 @@ class JavaInputStreamWrapper(protected val s: jio.InputStream) extends InputStre
    /** Eagirly fetched array of bytes from the entire input stream */
    def slurp : Array[Byte] = JavaStreamHelp.slurp(s)
    /** Returns a reader for this InputStream */
-   def reader(implicit charset : Charset) : ReaderStream = new JavaReaderStreamWrapper(new jio.InputStreamReader(s, charset))
+   def reader(implicit codec: Codec): ReaderStream = new JavaReaderStreamWrapper(new jio.InputStreamReader(s, codec.decoder))
    /** Blocking call to write the contents of this stream to an output file */
-   def pumpTo(output : OutputStream) : Unit = {
+   def pumpTo(output: OutputStream) : Unit = {
        //TODO - Speed this up!
        for ( byte <- bytes ) { 
            output.write(byte) 
@@ -168,7 +168,7 @@ class JavaOutputStreamWrapper(protected val s: jio.OutputStream) extends OutputS
    /** Writes an number of bytes defined by length, found in input to this stream starting at a given offset */
    def write(input : Array[Byte])(length : Int = input.length, offset : Int = 0) : Unit = s.write(input, offset,length)
    /** Returns a reader for this InputStream */
-   def writer(implicit charset : Charset = Charset.forName("UTF-8")) : WriterStream = new JavaWriterStreamWrapper(new jio.OutputStreamWriter(s, charset))
+   def writer(implicit codec: Codec = Codec.default) : WriterStream = new JavaWriterStreamWrapper(new jio.OutputStreamWriter(s, codec.encoder))
 }
 
 object JavaFileOutputStreamWrapper {

@@ -1,10 +1,10 @@
 package scalax.io
 
-import java.nio.charset.Charset
 import collection.Traversable
 import util.matching.Regex
 import _root_.scalax.resource.ManagedResource
 
+import scala.io.Codec
 
 /** stuff that should be in an object somewhere.... */
 trait Stuff {
@@ -92,9 +92,11 @@ private[io] trait DirectoryOpsMixin extends Location { self =>
   }
   /** the full contents of this directory tree */
   def tree: Traversable[Location]
+  //TODO: def deleteRecursively from scala.io.File
 }
 
 object File {
+  final val extensionRegex = """^.*\.([^.]+)$""".r
   def apply(name: String): File = JavaFile(name)
 }
 
@@ -116,28 +118,30 @@ private[io] trait FileOpsMixin extends Location { self =>
   def inputStream: InputStream
   def outputStream(opt: WriteOption = WriteOption.defaultWriteOption): OutputStream
   /**
-   * the length of the this <code>File</code> in bytes
-   * @todo what should this return if the file does not exist?  java.io.File will return 0L,
-   *       the same as for an empty file.
+   * @return the length of the this file in bytes, 0L for a non-existent file
    */
   def length: Long
-//TODO: make charset a constant somewhere instead of using forName repeated
-  def reader(implicit charset: Charset = Charset.forName("UTF-8")) = inputStream.reader(charset)
-  def writer(implicit charset: Charset = Charset.forName("UTF-8")) = outputStream().writer(charset)
+  def reader(implicit codec: Codec = Codec.default) = inputStream.reader(codec)
+  def writer(implicit codec: Codec = Codec.default) = outputStream().writer(codec)
 
-  def lines(implicit charset: Charset = Charset.forName("UTF-8")) : Traversable[String] = ManagedStreams.lines(reader(charset).buffered)(LineEndingStyle.ALL) //TODO - Figure out implicit/defaults issue!!!
-  def chars(implicit charset: Charset = Charset.forName("UTF-8")) : Traversable[Char] = ManagedStreams.chars(reader(charset).buffered)
-  def bytes : Traversable[Byte] = ManagedStreams.bytes(inputStream.buffered)
-  def slurp : Array[Byte] = for(in <- ManagedResource(inputStream)) yield in.slurp
+  def lines(implicit codec: Codec = Codec.default) : Traversable[String] = ManagedStreams.lines(reader(codec).buffered)(LineEndingStyle.ALL) //TODO - Figure out implicit/defaults issue!!!
+  def chars(implicit codec: Codec = Codec.default) : Traversable[Char] = ManagedStreams.chars(reader(codec).buffered)
+  def bytes: Traversable[Byte] = ManagedStreams.bytes(inputStream.buffered)
+  def slurp: Array[Byte] = for(in <- ManagedResource(inputStream)) yield in.slurp
 
-  def writeLines(lines : Iterable[String])(implicit charset : Charset = Charset.forName("UTF-8")) : Unit = for(out <- ManagedResource(writer)) {
+  def writeLines(lines: Iterable[String])(implicit codec: Codec = Codec.default) : Unit = for(out <- ManagedResource(writer)) {
         out.writeLines(lines)
   }
-  def write(input : String)(implicit charset : Charset = Charset.forName("UTF-8")) : Unit = for(out <- ManagedResource(writer)) {
+  def write(input : String)(implicit codec: Codec = Codec.default) : Unit = for(out <- ManagedResource(writer)) {
         out.writeChars(input)
   }
   def write(input : Array[Byte]) : Unit = for(out <- ManagedResource(outputStream())) {
         out.write(input)()
+  }
+  //TODO: toSource method for compatibility with scala.io
+  def extension: Option[String] = name match {
+    case File.extensionRegex(x) => Some(x)
+    case _ => None
   }
 }
 

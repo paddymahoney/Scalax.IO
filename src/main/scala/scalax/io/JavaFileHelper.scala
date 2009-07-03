@@ -1,6 +1,5 @@
 package scalax.io
 
-import java.nio.charset.Charset
 import collection.Traversable
 import util.matching.Regex
 import _root_.scalax.resource.ManagedResource
