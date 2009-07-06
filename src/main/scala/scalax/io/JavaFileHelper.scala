@@ -52,20 +52,49 @@ private[io] trait JavaFileMixin extends FileOpsMixin with JavaLocation {
   }
 }
 
-final class JavaDirectory(protected val file: jio.File) extends Directory with JavaDirectoryMixin {
-  def create = file.mkdirs
+object JavaDirectory extends DirectoryFactory {
+  def apply(name: String) = apply(new jio.File(name))
+  def apply(file: jio.File): JavaDirectory = {
+    if (file.isFile()) throw new IllegalArgumentException("The specified location is an existing file: " + file.getName())
+    new JavaDirectory(file)
+  }
+  def apply(dir: Directory): JavaDirectory = dir match {
+    case jdir: JavaDirectory => jdir
+    case _ => JavaDirectory(dir.name)
+  }
+  def tempDirectory = {
+    val tmpDirName = System.getProperty("java.io.tmpdir")
+    JavaDirectory(tmpDirName)
+  }
+  def userHomeDirectory = JavaDirectory(System.getProperty("user.home"))
+  def currentWorkingDirectory = JavaDirectory(System.getProperty("user.dir"))
+}
+
+final class JavaDirectory(protected[io] val file: jio.File) extends Directory with JavaDirectoryMixin {
+  def create = file.mkdirs()
   def children: Traversable[JavaDirectory] = file.listFiles.filter(_.isDirectory).map(new JavaDirectory(_))
   def files: Traversable[JavaFile] = file.listFiles.filter(_.isFile).map(JavaFile(_))
 }
 
-object JavaFile {
+object JavaFile extends FileFactory {
   def apply(name: String): JavaFile = {
     val f = new jio.File(name)
-    apply(f)
+    JavaFile(f)
+  }
+  def apply(name: String, dir: Directory): JavaFile = {
+    val jDir = JavaDirectory(dir).file
+    val f = new jio.File(jDir, name)
+    JavaFile(f)
   }
   def apply(file: jio.File): JavaFile = {
-    if (file.exists() && !file.isFile()) throw new IllegalArgumentException("Already exists and is not a file: " + file.getName())
+    if (file.isDirectory())
+      throw new IllegalArgumentException("The specified location is an existing directory: " + file.getName())
     new JavaFile(file)
+  }
+  def createTempFile(prefix: String, suffix: String, dir: Directory): JavaFile = {
+    val jDir: jio.File = JavaDirectory(dir).file
+    val jFile = jio.File.createTempFile(prefix, suffix, jDir)
+    new JavaFile(jFile)
   }
 }
 

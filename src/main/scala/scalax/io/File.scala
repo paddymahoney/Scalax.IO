@@ -8,9 +8,8 @@ import scala.io.Codec
 
 /** stuff that should be in an object somewhere.... */
 trait Stuff {
-  def createTempFile(prefix: String, suffix: String): File
-  def userHome: Directory
-  def currentWorkingDirectory: Directory
+  
+  
   def roots: Traversable[Location]
 }
 
@@ -63,6 +62,22 @@ trait Location { self =>
   }
 }
 
+trait DirectoryFactory {
+  def apply(name: String): Directory
+  def tempDirectory: Directory
+  def userHomeDirectory: Directory
+  def currentWorkingDirectory: Directory
+}
+
+object Directory extends DirectoryFactory {
+  val impl: DirectoryFactory = JavaDirectory
+  def apply(name: String): Directory = impl(name)
+  def tempDirectory: Directory = impl.tempDirectory
+  def userHomeDirectory: Directory = impl.userHomeDirectory
+  def currentWorkingDirectory: Directory = impl.currentWorkingDirectory
+}
+
+
 trait Directory extends Location with DirectoryOpsMixin { self =>
   /** the subdirectories immediately under this directory */
   def children: Traversable[Directory]
@@ -81,7 +96,8 @@ trait Directory extends Location with DirectoryOpsMixin { self =>
 
 private[io] trait DirectoryOpsMixin extends Location { self =>
   protected def asDirectory: Directory
-  def /(path: String): Path
+  def /(path: String): Path  // this needs to be a Path instead of a Location because so that several levels
+			     // can be specified together
   def /(glob: GlobMapper) = new Traversable[Location] {
     def foreach[U](f: Location => U) =
       self.tree.filter(x => glob.matches(x.pathFrom(self.asDirectory))).foreach(f)
@@ -95,9 +111,23 @@ private[io] trait DirectoryOpsMixin extends Location { self =>
   //TODO: def deleteRecursively from scala.io.File
 }
 
-object File {
+trait FileFactory {
+  def apply(name: String): File
+  def apply(name: String, dir: Directory): File
+  def createTempFile(prefix: String = "", suffix: String = "", dir: Directory = Directory.tempDirectory): File
+}
+
+object File extends FileFactory {
+  val impl: FileFactory = JavaFile
   final val extensionRegex = """^.*\.([^.]+)$""".r
-  def apply(name: String): File = JavaFile(name)
+  def apply(name: String): File = impl(name)
+  def apply(name: String, dir: Directory): File = impl(name, dir)
+  def unapply(loc: Location): Option[File] = loc match {
+    case file: File => Some(file)
+    case path: Path if path.isFile || !path.exists => Some(path.asFile)
+    case _ => None
+  }
+  def createTempFile(prefix: String, suffix: String, dir: Directory): File = impl.createTempFile(prefix, suffix, dir)
 }
 
 //TODO - Complete this interface!!!
