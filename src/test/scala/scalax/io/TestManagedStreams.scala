@@ -8,7 +8,7 @@ import _root_.java.{io => jio}
 class TestManagedStreams {
 
    @Test
-   def mustReadLines() {
+   def mustReadLinesWithDefaultStyle() {
 	val input = """Here is a line.
 and another one!"""
         val jstream = new jio.StringReader(input)
@@ -31,4 +31,6 @@ and another one!"""
         }
         assertTrue("STream was not closed!", closed)
    }
+
+  
 }

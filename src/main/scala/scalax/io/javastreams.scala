@@ -13,7 +13,8 @@
 package scalax.io
 
 import _root_.java.{io => jio}
-import scala.io.Codec
+import _root_.scala.io.Codec
+import _root_.scala.annotation.tailrec
 
 private[io] abstract class FetchIterator[T] extends Iterator[T] {
 
@@ -36,6 +37,45 @@ private[io] abstract class FetchIterator[T] extends Iterator[T] {
 		nextItem.get
 	}
 	
+}
+/**
+ * This class is used to iterate over lines in a reader using *strict* line ending characters
+ */
+private[io] class LineFetchIterator(br : jio.BufferedReader, val lineEndingString :String) extends FetchIterator[String] {
+  protected def fetchNext() : Option[String] = {
+      val output = new StringBuilder
+      
+      
+      @tailrec
+      def readInput(input : Int, endingIndex : Int) : Unit = {
+          input match {
+               case -1 => //Return!
+
+               case x if endingIndex > 0 && (x.toChar != lineEndingString(endingIndex)) => 
+                   //Add buffered "endline check chars" to buffer
+                   output.appendAll(lineEndingString.take(endingIndex))
+                   //Append most recently read character
+                   output.append(x.toChar)
+                   readInput(br.read(), 0)
+
+               case x if (x.toChar == lineEndingString(endingIndex)) && (endingIndex+1 == lineEndingString.length) => 
+                    //Return
+
+               case x if endingIndex > 0 => //The line ending characters have to match because of earlier case statement!
+                   readInput(br.read(), endingIndex + 1)
+
+               case x if (x.toChar == lineEndingString(0)) =>
+                   readInput(br.read(), endingIndex + 1)
+
+               case x => 
+                   output.append(x.toChar)
+                   readInput(br.read(), endingIndex)
+          }
+      }
+      readInput(br.read(), 0)
+      val finalOutput = output.toString
+      if(finalOutput.length > 0) Some(finalOutput) else None 
+  }
 }
 
 private[io] object JavaStreamHelp {
@@ -79,18 +119,20 @@ private[io] object JavaStreamHelp {
       * Iterates over the lines of the reader.
       * Keeps reader open even after reaching EOF, reader must be closed explicitly.
       */
-	def lines(br : jio.BufferedReader): Iterator[String] = new FetchIterator[String] {
-		override def fetchNext() =
-			br.readLine() match {
-				case null => None
-				case s => Some(s)
-			}
-	}   
+	def lines(br : jio.BufferedReader, lineEndingStyle : LineEndingStyle.LineEndingStyle): Iterator[String] = lineEndingStyle match {
+             case LineEndingStyle.ALL => new FetchIterator[String] {
+                         override def fetchNext() = br.readLine() match {
+                           case null => None
+                           case s => Some(s)
+                         }
+                       }
+            case _ => new LineFetchIterator(br, LineEndingStyle.separator_for(lineEndingStyle))
+        }   
 
 	/** Iterates over the lines of the reader. */
-	def lines(in : jio.Reader) : Iterator[String] = {
+	def lines(in : jio.Reader, lineEndingStyle : LineEndingStyle.LineEndingStyle) : Iterator[String] = {
 		val br = ensureBuffered(in)
-		lines(br)
+		lines(br, lineEndingStyle)
 	}  
 
 	/** Wrap this Reader into a BufferedReader if it isn't one already. */
@@ -141,7 +183,7 @@ class JavaReaderStreamWrapper(s : jio.Reader) extends ReaderStream {
    def buffered : ReaderStream = this
    /** Lazily created sequence of lines in this input stream.  This will refetch lines every time it's iterated over */
    def lines(implicit lineEnding : LineEndingStyle.LineEndingStyle = LineEndingStyle.current_platform_style) : Iterable[String] = new Iterable[String] {
-      def iterator = JavaStreamHelp.lines(s)
+      def iterator = JavaStreamHelp.lines(s, lineEnding)
    }
    /** Lazily created sequence of characters in this input stream.  This will refetch characters every time it's iterated over */
    def chars : Iterable[Char] = new Iterable[Char] {
@@ -202,7 +244,11 @@ class JavaWriterStreamWrapper(s : jio.Writer) extends WriterStream {
    def close() : Unit = s.close()
    /** Writes the sequence of string to the stream assuming each string is a line in the file */
    def writeLines(input : Iterable[String], lineEnding : LineEndingStyle.LineEndingStyle = LineEndingStyle.current_platform_style) : Unit = {
-       input.foreach(s.write)
+       def writeLine(input : String) { 
+          s.write(input)
+          s.write(LineEndingStyle.separator_for(lineEnding))
+       }
+       input.foreach(writeLine)       
    }
    /** Writes the sequence of characters to the stream in the stream's encoding. */
    def writeChars(input : Iterable[Char]) : Unit = input.foreach(s.write(_))
