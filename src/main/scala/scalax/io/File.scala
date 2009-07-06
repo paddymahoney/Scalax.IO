@@ -6,13 +6,19 @@ import _root_.scalax.resource.ManagedResource
 
 import scala.io.Codec
 
-trait FileFactory {
-  def apply(name: String): File
-  def apply(dir: Directory, name: String): File
-  def createTempFile(prefix: String = "tmp", suffix: String = ".tmp", dir: Directory = Directory.temp): File
+trait AbstractFileFactory {
+  type FileOps_T <: FileOpsMixin // allow for both File and Path
+  def apply(name: String): FileOps_T
+  def apply(dir: Directory, name: String): FileOps_T
+  def createTempFile(prefix: String = "tmp", suffix: String = ".tmp", dir: Directory = Directory.temp): FileOps_T
+}
+
+trait FileFactory extends AbstractFileFactory {
+  type FileOps_T <: File
 }
 
 object File extends FileFactory {
+  type FileOps_T = File
   val impl: FileFactory = JavaFile
   final val extensionRegex = """^.*\.([^.]+)$""".r
   def apply(name: String): File = impl(name)
@@ -39,7 +45,7 @@ trait File extends Location with FileOpsMixin { self =>
 
 }
 
-private[io] trait FileOpsMixin extends Location { self =>
+private[io] trait FileOpsMixin extends Location { //self =>
   def inputStream: InputStream
   def outputStream(opt: WriteOption = WriteOption.defaultWriteOption): OutputStream
   /**
@@ -49,19 +55,21 @@ private[io] trait FileOpsMixin extends Location { self =>
   def reader(implicit codec: Codec = Codec.default) = inputStream.reader(codec)
   def writer(implicit codec: Codec = Codec.default) = outputStream().writer(codec)
 
-  def lines(implicit codec: Codec = Codec.default) : Traversable[String] = ManagedStreams.lines(reader(codec).buffered)(LineEndingStyle.ALL) //TODO - Figure out implicit/defaults issue!!!
+  def lines(implicit codec: Codec = Codec.default) : Traversable[String] = 
+    ManagedStreams.lines(reader(codec).buffered)(LineEndingStyle.ALL) //TODO - Figure out implicit/defaults issue!!!
+
   def chars(implicit codec: Codec = Codec.default) : Traversable[Char] = ManagedStreams.chars(reader(codec).buffered)
   def bytes: Traversable[Byte] = ManagedStreams.bytes(inputStream.buffered)
   def slurp: Array[Byte] = for(in <- ManagedResource(inputStream)) yield in.slurp
 
-  def writeLines(lines: Iterable[String])(implicit codec: Codec = Codec.default) : Unit = for(out <- ManagedResource(writer)) {
-        out.writeLines(lines)
+  def writeLines(lines: Iterable[String])(implicit codec: Codec = Codec.default): Unit = for(out <- ManagedResource(writer)) {
+    out.writeLines(lines)
   }
-  def write(input : String)(implicit codec: Codec = Codec.default) : Unit = for(out <- ManagedResource(writer)) {
-        out.writeChars(input)
+  def write(input: String)(implicit codec: Codec = Codec.default) : Unit = for(out <- ManagedResource(writer)) {
+    out.writeChars(input)
   }
-  def write(input : Array[Byte]) : Unit = for(out <- ManagedResource(outputStream())) {
-        out.write(input)()
+  def write(input: Array[Byte]) : Unit = for(out <- ManagedResource(outputStream())) {
+    out.write(input)()
   }
   //TODO: toSource method for compatibility with scala.io
   def extension: Option[String] = name match {
@@ -72,7 +80,12 @@ private[io] trait FileOpsMixin extends Location { self =>
 
 import java.{ io => jio }
 
-object JavaFile extends FileFactory {
+trait JavaFileFactory extends AbstractFileFactory {
+  type FileOps_T <: JavaFileMixin
+}
+
+object JavaFile extends JavaFileFactory with FileFactory {
+  type FileOps_T = JavaFile
   def apply(name: String): JavaFile = {
     val f = new jio.File(name)
     JavaFile(f)
