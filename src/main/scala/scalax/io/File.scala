@@ -75,7 +75,41 @@ private[io] trait FileOpsMixin extends Location { self =>
   }
 }
 
+import java.{ io => jio }
 
+object JavaFile extends FileFactory {
+  def apply(name: String): JavaFile = {
+    val f = new jio.File(name)
+    JavaFile(f)
+  }
+  def apply(name: String, dir: Directory): JavaFile = {
+    val jDir = JavaDirectory(dir).file
+    val f = new jio.File(jDir, name)
+    JavaFile(f)
+  }
+  def apply(file: jio.File): JavaFile = {
+    if (file.isDirectory())
+      throw new IllegalArgumentException("The specified location is an existing directory: " + file.getName())
+    new JavaFile(file)
+  }
+  def createTempFile(prefix: String, suffix: String, dir: Directory): JavaFile = {
+    val jDir: jio.File = JavaDirectory(dir).file
+    val jFile = jio.File.createTempFile(prefix, suffix, jDir)
+    new JavaFile(jFile)
+  }
+}
 
+private[io] trait JavaFileMixin extends FileOpsMixin with JavaLocation {
+  def length = file.length
+  def inputStream = {
+    // there aren't any read options other than Read, which really is implied
+    new JavaInputStreamWrapper(new jio.FileInputStream(file))
+  }
+  def outputStream(opt: WriteOption = WriteOption.defaultWriteOption): OutputStream = {
+    JavaFileOutputStreamWrapper(opt, file)
+  }
+}
 
-
+final class JavaFile private (protected val file: jio.File) extends File with JavaFileMixin {
+  def create() = file.createNewFile()
+}

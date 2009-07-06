@@ -41,3 +41,30 @@ trait Location { self =>
     } else cannonicalPath
   }
 }
+
+import java.{ io => jio }
+
+trait JavaLocation extends Location {
+  protected val file: jio.File
+  final def canRead = file.canRead
+  final def canWrite = file.canWrite
+  final def exists = file.exists
+  final def name = file.getName()
+  final def isAbsolute = file.isAbsolute
+  final def isHidden = file.isHidden
+  final def lastModified = file.lastModified
+  final def parent: Option[JavaDirectory] = {
+    file.getParentFile match {
+      case null => None
+      case dir => Some(new JavaDirectory(dir))
+    }
+  }
+  final def path = file.getPath
+  final def cannonicalPath = file.getCanonicalPath
+  final def delete() = file.delete()
+  def renameTo(name: Location) = name match {
+    case jl: JavaLocation => file.renameTo(jl.file)
+    case _ => file.renameTo(new jio.File(name.path))
+  }
+  final override def toString = path
+}

@@ -46,3 +46,25 @@ trait Path extends Location with DirectoryOpsMixin with FileOpsMixin { self =>
   def length: Long
 }
 
+import java.{ io => jio }
+
+final class JavaPath(protected val file: jio.File) extends Path with JavaFileMixin with JavaDirectoryMixin {
+  def asDirectory = {
+    if (isDirectory || !exists) new JavaDirectory(file)
+    else throw new UnsupportedOperationException("this Path is already a file, cannot convert to a directory")
+  }
+  def asFile = {
+    if (isFile || !exists) JavaFile(file)
+    else throw new UnsupportedOperationException("this Path is already a directory, cannot convert to a file")
+  }
+  def asFileOrDirectory: Option[Either[JavaFile, JavaDirectory]] = {
+    if (!exists) None
+    else if (isDirectory) Some(Right(new JavaDirectory(file)))
+    else Some(Left(JavaFile(file)))
+  }
+  def createNewFile() = if (file.createNewFile()) Some(JavaFile(file)) else None
+  def createNewDirectory() = if (file.mkdirs()) Some(new JavaDirectory(file)) else None
+  def isDirectory = file.isDirectory
+  def isFile = file.isFile
+}
+
