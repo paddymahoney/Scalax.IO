@@ -6,18 +6,52 @@ import collection.Traversable
 import util.matching.Regex
 
 trait DirectoryFactory {
-  def apply(name: String): Directory
-  def tempDirectory: Directory
-  def userHomeDirectory: Directory
-  def currentWorkingDirectory: Directory
+  /**
+   * Create a new <code>Directory<code> object with the specified pathname
+   * This does not create a new directory on the file system.  Use the Directory.create method to create a
+   * new directory on the file system.
+   * @param pathName a relative, absolute, or canonical pathname
+   * @return a new <code>Directory</code> object
+   * @throws IllegalArgumentException if the specified <code>pathName</code> is an existing <code>File</code>
+   */
+  def apply(pathName: String): Directory
+  /**
+   * Create a new directory within the specified parent directory
+   * This does not create a new directory on the file system.
+   * @param parent the parent <code>Directory</code> for the new <code>Directory<code>
+   * @param name the pathname relative to <code>parent</code>
+   * @return a new <code>Directory</code> within <code>parent</code>
+   */
+  def apply(parent: Directory, name: String): Directory
+  /**
+   * the directory for storing temporary files
+   */
+  def temp: Directory
+  /**
+   * the home directory of the current user
+   */ 
+  def home: Directory
+  /**
+   * the current working directory
+   */ 
+  def current: Directory
+  /**
+   * root directories
+   * On Unix-like systems this returns a single directory, namely "/".  On Windows this returns a list
+   * of directories representing the drive letters of currently mapped drives.
+   */
+  def roots: Traversable[Directory]
 }
 
 object Directory extends DirectoryFactory {
+  //TODO: make the implementation of DirectoryFactory use by Directory configurable
   val impl: DirectoryFactory = JavaDirectory
-  def apply(name: String): Directory = impl(name)
-  def tempDirectory: Directory = impl.tempDirectory
-  def userHomeDirectory: Directory = impl.userHomeDirectory
-  def currentWorkingDirectory: Directory = impl.currentWorkingDirectory
+  def apply(name: String) = impl(name)
+  def apply(dir: Directory, name: String) = impl(dir, name)
+  def temp = impl.temp
+  def home = impl.home
+  def current = impl.current
+  def roots = impl.roots
 }
 
 
@@ -32,14 +66,34 @@ trait Directory extends Location with DirectoryOpsMixin { self =>
    * @return true if a file was created, false if not
    */
   def create: Boolean
+  /** @return true */
   final def isDirectory = true
+  /** @return false */
   final def isFile = false
   protected def asDirectory = self
+  /**
+   * Create a new file object within this directory (does not actually add the file to filesystem)
+   * @param name the name of the new <code>File</code>
+   * @return a new <code>File</code> object for a file within this directory
+   */
+  def newFile(name: String): File
+  /**
+   * Create a new subdirectory within this directory (does not actually add the directory to the filesystem)
+   * @param name the name of the new <code>Directory</code>
+   * @return a new <code>Directory</code> object for a directory within this <code>Directory</code>
+   */
+  def newDirectory(name: String): Directory
+  /**
+   * Create a new path within this directory (does not actually add path to the filesystem)
+   * @param name the name of the new <code>Path</code>
+   * @return a new <code>Path</code> object for a path within this <code>Directory</code<
+   */ 
+  def newPath(name: String): Path
 }
 
 private[io] trait DirectoryOpsMixin extends Location { self =>
   protected def asDirectory: Directory
-  def /(path: String): Path  // this needs to be a Path instead of a Location because so that several levels
+  def /(path: String): Path  // this needs to be a Path instead of a Location so that several levels
 			     // can be specified together
   def /(glob: GlobMapper) = new Traversable[Location] {
     def foreach[U](f: Location => U) =
@@ -62,16 +116,18 @@ object JavaDirectory extends DirectoryFactory {
     if (file.isFile()) throw new IllegalArgumentException("The specified location is an existing file: " + file.getName())
     new JavaDirectory(file)
   }
+  def apply(dir: Directory, name: String): JavaDirectory = JavaDirectory(JavaDirectory(dir), name)
   def apply(dir: Directory): JavaDirectory = dir match {
     case jdir: JavaDirectory => jdir
     case _ => JavaDirectory(dir.name)
   }
-  def tempDirectory = {
+  def temp = {
     val tmpDirName = System.getProperty("java.io.tmpdir")
     JavaDirectory(tmpDirName)
   }
-  def userHomeDirectory = JavaDirectory(System.getProperty("user.home"))
-  def currentWorkingDirectory = JavaDirectory(System.getProperty("user.dir"))
+  def home = JavaDirectory(System.getProperty("user.home"))
+  def current = JavaDirectory(System.getProperty("user.dir"))
+  def roots: Traversable[JavaDirectory] = jio.File.listRoots.map(JavaDirectory(_))
 }
 
 private[io] trait JavaDirectoryMixin extends DirectoryOpsMixin with JavaLocation {
@@ -86,6 +142,9 @@ final class JavaDirectory(protected[io] val file: jio.File) extends Directory wi
   def create = file.mkdirs()
   def children: Traversable[JavaDirectory] = file.listFiles.filter(_.isDirectory).map(new JavaDirectory(_))
   def files: Traversable[JavaFile] = file.listFiles.filter(_.isFile).map(JavaFile(_))
+  def newFile(name: String): JavaFile = JavaFile(this, name)
+  def newDirectory(name: String): JavaDirectory = JavaDirectory(this, name)
+  def newPath(name: String): JavaPath = JavaPath(this, name)
 }
 
 // Note: calling list() on a file (as in not a directory) returns null
@@ -126,3 +185,15 @@ class JFileTree(val root : jio.File) extends Iterable[jio.File] {
     def wasUnreadable = failed;
   }
 }
+
+// This is just an idea for providing a parent directory for windows drive letters so that
+// other code doesn't have to deal with the fact that there are multiple root directories.
+// I'm going to leave it for now because I'm working on a Mac and haven't setup a Windows VM.
+//class SyntheticRootDirectory(private val roots: Traversable[Directory]) extends Directory {
+//  def children = roots
+//  def files: Traversable[File] = Nil
+//  def contents: Traversable[Location] = roots
+//  def create: Boolean = throw new UnsupportedOperationException()
+//  
+//}
+

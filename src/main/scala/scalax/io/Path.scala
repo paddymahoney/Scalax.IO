@@ -3,6 +3,27 @@ package scalax.io
 import collection.Traversable
 import util.matching.Regex
 
+trait PathFactory {
+  def apply(pathName: String): Path
+  def apply(parent: Directory, name: String): Path
+  def apply(parent: Path, name: String): Path
+  def createTempFile(prefix: String = "tmp", suffix: String = ".tmp", path: Path = temp): Path
+  def temp: Path
+  def home: Path
+  def current: Path
+}
+
+object Path extends PathFactory {
+  val impl: PathFactory = JavaPath
+  def apply(pathName: String) = impl(pathName)
+  def apply(parent: Directory, name: String) = impl(parent, name)
+  def apply(parent: Path, name: String) = impl(parent, name)
+  def createTempFile(prefix: String, suffix: String, path: Path) = impl.createTempFile(prefix, suffix, path)
+  def temp = impl.temp
+  def home = impl.home
+  def current = impl.current
+}
+
 trait Path extends Location with DirectoryOpsMixin with FileOpsMixin { self =>
   /**
    * Convert this <code>Path</code> into a <code>Directory</code<
@@ -47,6 +68,25 @@ trait Path extends Location with DirectoryOpsMixin with FileOpsMixin { self =>
 }
 
 import java.{ io => jio }
+
+object JavaPath extends PathFactory {
+  //TODO: refactor common code in JavaPath and JavaDirectory companion objects into a mixin
+  def apply(pathName: String) = JavaPath(new jio.File(pathName))
+  def apply(path: Path): JavaPath = path match {
+    case jp: JavaPath => jp
+    case _ => JavaPath(path.name) //TODO: should this be absolute or canonical name instead?
+  }
+  def apply(file: jio.File) = new JavaPath(file)
+  def apply(dir: Directory, name: String) = new JavaPath(new jio.File(JavaDirectory(dir).file, name))
+  def apply(dir: Path, name: String) = new JavaPath(new jio.File(JavaPath(dir).file, name))
+  def createTempFile(prefix: String, suffix: String, dir: Path): JavaPath = {
+    val jp = JavaPath(dir)
+    JavaPath(jio.File.createTempFile(prefix, suffix, jp.file))
+  }
+  def temp = JavaPath(System.getProperty("temp.dir"))
+  def current = JavaPath(System.getProperty("user.dir"))
+  def home = JavaPath(System.getProperty("user.home"))
+}
 
 final class JavaPath(protected val file: jio.File) extends Path with JavaFileMixin with JavaDirectoryMixin {
   def asDirectory = {

@@ -13,15 +13,15 @@ trait Stuff {
 
 trait FileFactory {
   def apply(name: String): File
-  def apply(name: String, dir: Directory): File
-  def createTempFile(prefix: String = "", suffix: String = "", dir: Directory = Directory.tempDirectory): File
+  def apply(dir: Directory, name: String): File
+  def createTempFile(prefix: String = "tmp", suffix: String = ".tmp", dir: Directory = Directory.temp): File
 }
 
 object File extends FileFactory {
   val impl: FileFactory = JavaFile
   final val extensionRegex = """^.*\.([^.]+)$""".r
   def apply(name: String): File = impl(name)
-  def apply(name: String, dir: Directory): File = impl(name, dir)
+  def apply(dir: Directory, name: String): File = impl(dir, name)
   def unapply(loc: Location): Option[File] = loc match {
     case file: File => Some(file)
     case path: Path if path.isFile || !path.exists => Some(path.asFile)
@@ -82,7 +82,7 @@ object JavaFile extends FileFactory {
     val f = new jio.File(name)
     JavaFile(f)
   }
-  def apply(name: String, dir: Directory): JavaFile = {
+  def apply(dir: Directory, name: String): JavaFile = {
     val jDir = JavaDirectory(dir).file
     val f = new jio.File(jDir, name)
     JavaFile(f)
