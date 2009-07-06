@@ -6,11 +6,6 @@ import _root_.scalax.resource.ManagedResource
 
 import scala.io.Codec
 
-/** stuff that should be in an object somewhere.... */
-trait Stuff {  
-  def roots: Traversable[Location]
-}
-
 trait FileFactory {
   def apply(name: String): File
   def apply(dir: Directory, name: String): File
