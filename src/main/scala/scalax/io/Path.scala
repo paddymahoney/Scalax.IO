@@ -3,22 +3,25 @@ package scalax.io
 import collection.Traversable
 import util.matching.Regex
 
-trait PathFactory {
-  def apply(pathName: String): Path
-  def apply(parent: Directory, name: String): Path
-  def apply(parent: Path, name: String): Path
-  def createTempFile(prefix: String = "tmp", suffix: String = ".tmp", path: Path = temp): Path
-  def temp: Path
-  def home: Path
-  def current: Path
+trait PathFactory extends AbstractFileFactory {
+  final type FileOps_P = Path
+  final type DirOps_P = Path
+  type FileOps_R <: FileOps_P
+  type DirOps_R <: DirOps_P
+  def apply(parent: Directory, name: String): FileOps_R
+  def temp: FileOps_R
+  def home: FileOps_R
+  def current: FileOps_R
 }
 
 object Path extends PathFactory {
+  type FileOps_R = Path
+  type DirOps_R = Path
   val impl: PathFactory = JavaPath
   def apply(pathName: String) = impl(pathName)
-  def apply(parent: Directory, name: String) = impl(parent, name)
-  def apply(parent: Path, name: String) = impl(parent, name)
-  def createTempFile(prefix: String, suffix: String, path: Path) = impl.createTempFile(prefix, suffix, path)
+  def apply(parent: Directory, name: String): Path = impl(parent, name)
+  def apply(parent: DirOps_P, name: String): Path = impl(parent, name)
+  def createTempFile(prefix: String, suffix: String, path: Path): Path = impl.createTempFile(prefix, suffix, path)
   def temp = impl.temp
   def home = impl.home
   def current = impl.current
@@ -58,7 +61,6 @@ trait Path extends Location with DirectoryOpsMixin with FileOpsMixin { self =>
   /** */
   def contents: Traversable[Path]
 
-  // file operations...maybe a mixin???
   /**
    * the length of the this <code>File</code> in bytes
    * @todo what should this return if the file does not exist?  java.io.File will return 0L,
@@ -69,26 +71,18 @@ trait Path extends Location with DirectoryOpsMixin with FileOpsMixin { self =>
 
 import java.{ io => jio }
 
-object JavaPath extends PathFactory {
+object JavaPath extends PathFactory with JavaFileFactory {
+  type FileOps_R = JavaPath
+  type DirOps_R = JavaPath
   //TODO: refactor common code in JavaPath and JavaDirectory companion objects into a mixin
-  def apply(pathName: String) = JavaPath(new jio.File(pathName))
-  def apply(path: Path): JavaPath = path match {
-    case jp: JavaPath => jp
-    case _ => JavaPath(path.name) //TODO: should this be absolute or canonical name instead?
-  }
   def apply(file: jio.File) = new JavaPath(file)
   def apply(dir: Directory, name: String) = new JavaPath(new jio.File(JavaDirectory(dir).file, name))
-  def apply(dir: Path, name: String) = new JavaPath(new jio.File(JavaPath(dir).file, name))
-  def createTempFile(prefix: String, suffix: String, dir: Path): JavaPath = {
-    val jp = JavaPath(dir)
-    JavaPath(jio.File.createTempFile(prefix, suffix, jp.file))
-  }
   def temp = JavaPath(System.getProperty("temp.dir"))
   def current = JavaPath(System.getProperty("user.dir"))
   def home = JavaPath(System.getProperty("user.home"))
 }
 
-final class JavaPath(protected val file: jio.File) extends Path with JavaFileMixin with JavaDirectoryMixin {
+final class JavaPath(protected[io] val file: jio.File) extends Path with JavaFileMixin with JavaDirectoryMixin {
   def asDirectory = {
     if (isDirectory || !exists) new JavaDirectory(file)
     else throw new UnsupportedOperationException("this Path is already a file, cannot convert to a directory")

@@ -45,7 +45,7 @@ trait Location { self =>
 import java.{ io => jio }
 
 trait JavaLocation extends Location {
-  protected val file: jio.File
+  protected[io] val file: jio.File
   final def canRead = file.canRead
   final def canWrite = file.canWrite
   final def exists = file.exists

@@ -7,28 +7,52 @@ import _root_.scalax.resource.ManagedResource
 import scala.io.Codec
 
 trait AbstractFileFactory {
-  type FileOps_T <: FileOpsMixin // allow for both File and Path
-  def apply(name: String): FileOps_T
-  def apply(dir: Directory, name: String): FileOps_T
-  def createTempFile(prefix: String = "tmp", suffix: String = ".tmp", dir: Directory = Directory.temp): FileOps_T
+  /** parameter type for file-like objects */
+  type FileOps_P <: FileOpsMixin // allow for both File and Path
+  /** parameter type for directory-like objects */
+  type DirOps_P <: DirectoryOpsMixin
+  /** return type for file-like objects */
+  type FileOps_R <: FileOpsMixin
+  /** return type for directory-like objects */
+  type DirOps_R <: DirectoryOpsMixin
+  /**
+   * construct a file from the specified <code>pathName</code>
+   * The <code>pathName</code> may be relative, absolute, or canonical.
+   * @param pathName the pathname for the file
+   * @return a file object
+   */
+  def apply(pathName: String): FileOps_R
+  /**
+   * construct a file in the specified directory
+   * @param parent the directory in which to place the object
+   * @param name the pathname relative to <code>parent</code> for the file
+   * @return a file within <code>parent</code>
+   */
+  def apply(parent: DirOps_P, name: String): FileOps_R
+  //TODO: add default arguments to AbstractFileFactory.createTempFile
+  def createTempFile(prefix: String, suffix: String, dir: DirOps_P): FileOps_R
 }
 
 trait FileFactory extends AbstractFileFactory {
-  type FileOps_T <: File
+  final type FileOps_P = File
+  final type DirOps_P = Directory
+  type FileOps_R <: FileOps_P
+  type DirOps_R <: DirOps_P
 }
 
 object File extends FileFactory {
-  type FileOps_T = File
+  type FileOps_R = File
+  type DirOps_R = Directory
   val impl: FileFactory = JavaFile
   final val extensionRegex = """^.*\.([^.]+)$""".r
   def apply(name: String): File = impl(name)
-  def apply(dir: Directory, name: String): File = impl(dir, name)
+  def apply(dir: DirOps_P, name: String): File = impl(dir, name)
   def unapply(loc: Location): Option[File] = loc match {
     case file: File => Some(file)
     case path: Path if path.isFile || !path.exists => Some(path.asFile)
     case _ => None
   }
-  def createTempFile(prefix: String, suffix: String, dir: Directory): File = impl.createTempFile(prefix, suffix, dir)
+  def createTempFile(prefix: String, suffix: String, dir: DirOps_P): File = impl.createTempFile(prefix, suffix, dir)
 }
 
 //TODO - Complete this interface!!!
@@ -81,29 +105,37 @@ private[io] trait FileOpsMixin extends Location { //self =>
 import java.{ io => jio }
 
 trait JavaFileFactory extends AbstractFileFactory {
-  type FileOps_T <: JavaFileMixin
+  type FileOps_R <: JavaFileMixin
+  type DirOps_R <: JavaDirectoryMixin
+  //protected def makeInstance(file: jio.File): FileOps_R
+  protected def extractFile(loc: Location): jio.File = loc match {
+    case jloc: JavaLocation => jloc.file
+    case _ => new jio.File(loc.name)  //TODO: should this use the absolute or canonical path?
+  }
+  def apply(name: String): FileOps_R = {
+    val f = new jio.File(name)
+    apply(f)
+  }
+  def apply(dir: DirOps_P, name: String): FileOps_R = {
+    val jDir = extractFile(dir)
+    val f = new jio.File(jDir, name)
+    apply(f)
+  }
+  def createTempFile(prefix: String, suffix: String, dir: DirOps_P): FileOps_R = {
+    val jDir = extractFile(dir)
+    val jFile = jio.File.createTempFile(prefix, suffix, jDir)
+    apply(jFile)
+  }
+  def apply(file: jio.File): FileOps_R
 }
 
 object JavaFile extends JavaFileFactory with FileFactory {
-  type FileOps_T = JavaFile
-  def apply(name: String): JavaFile = {
-    val f = new jio.File(name)
-    JavaFile(f)
-  }
-  def apply(dir: Directory, name: String): JavaFile = {
-    val jDir = JavaDirectory(dir).file
-    val f = new jio.File(jDir, name)
-    JavaFile(f)
-  }
-  def apply(file: jio.File): JavaFile = {
+  type FileOps_R = JavaFile
+  type DirOps_R = JavaDirectory
+  def apply(file: jio.File): FileOps_R = {
     if (file.isDirectory())
       throw new IllegalArgumentException("The specified location is an existing directory: " + file.getName())
     new JavaFile(file)
-  }
-  def createTempFile(prefix: String, suffix: String, dir: Directory): JavaFile = {
-    val jDir: jio.File = JavaDirectory(dir).file
-    val jFile = jio.File.createTempFile(prefix, suffix, jDir)
-    new JavaFile(jFile)
   }
 }
 
@@ -118,6 +150,6 @@ private[io] trait JavaFileMixin extends FileOpsMixin with JavaLocation {
   }
 }
 
-final class JavaFile private (protected val file: jio.File) extends File with JavaFileMixin {
+final class JavaFile private (protected[io] val file: jio.File) extends File with JavaFileMixin {
   def create() = file.createNewFile()
 }
