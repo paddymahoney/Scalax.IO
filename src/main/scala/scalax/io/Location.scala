@@ -4,7 +4,7 @@ package scalax.io
 /**
  * A point on a file system, such as a file, directory, or abstract pathname
  */
-trait Location { self =>
+trait Location { //self =>
   def canRead: Boolean
   def canWrite: Boolean
   def exists: Boolean
@@ -40,6 +40,33 @@ trait Location { self =>
       path.drop(dir.cannonicalPath.length)
     } else cannonicalPath
   }
+}
+
+trait AbstractLocationFactory {
+  /** parameter type for file-like objects */
+  type FileOps_P <: FileOpsMixin // allow for both File and Path
+  /** parameter type for directory-like objects */
+  type DirOps_P <: DirectoryOpsMixin
+  /** return type for file-like objects */
+  type FileOps_R <: FileOpsMixin
+  /** return type for directory-like objects */
+  type DirOps_R <: DirectoryOpsMixin
+  /** return type for factory methods */
+  type Loc_R
+  /**
+   * construct a file from the specified <code>pathName</code>
+   * The <code>pathName</code> may be relative, absolute, or canonical.
+   * @param pathName the pathname for the file
+   * @return a file object
+   */
+  def apply(pathName: String): Loc_R
+  /**
+   * construct a file in the specified directory
+   * @param parent the directory in which to place the object
+   * @param name the pathname relative to <code>parent</code> for the file
+   * @return a file within <code>parent</code>
+   */
+  def apply(parent: DirOps_P, name: String): Loc_R  
 }
 
 import java.{ io => jio }

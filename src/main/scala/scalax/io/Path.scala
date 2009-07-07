@@ -8,7 +8,8 @@ trait PathFactory extends AbstractFileFactory {
   final type DirOps_P = Path
   type FileOps_R <: FileOps_P
   type DirOps_R <: DirOps_P
-  def apply(parent: Directory, name: String): FileOps_R
+  type Loc_R <: Path
+  def apply(parent: Directory, name: String): Loc_R
   def temp: FileOps_R
   def home: FileOps_R
   def current: FileOps_R
@@ -17,6 +18,7 @@ trait PathFactory extends AbstractFileFactory {
 object Path extends PathFactory {
   type FileOps_R = Path
   type DirOps_R = Path
+  type Loc_R = Path
   val impl: PathFactory = JavaPath
   def apply(pathName: String) = impl(pathName)
   def apply(parent: Directory, name: String): Path = impl(parent, name)
@@ -74,6 +76,7 @@ import java.{ io => jio }
 object JavaPath extends PathFactory with JavaFileFactory {
   type FileOps_R = JavaPath
   type DirOps_R = JavaPath
+  type Loc_R = JavaPath
   //TODO: refactor common code in JavaPath and JavaDirectory companion objects into a mixin
   def apply(file: jio.File) = new JavaPath(file)
   def apply(dir: Directory, name: String) = new JavaPath(new jio.File(JavaDirectory(dir).file, name))
