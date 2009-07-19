@@ -22,7 +22,7 @@ private[io] trait FileOps[T <: FileOps[T]] extends Location {
   def inputStream: InputStream = {
     try {
       try {
-        val is = new jio.FileInputStream(file)
+        val is = new jio.FileInputStream(jfile)
 	    new JavaInputStreamWrapper(is)
       } catch {
     	// the nested try/catch is used because file.isDirectory can throw a SecurityException
@@ -31,7 +31,7 @@ private[io] trait FileOps[T <: FileOps[T]] extends Location {
 		  // or the file is a directory, so we need to check if the file is a directory
 		  // in order to disambiguate between the two situations
 		  // http://java.sun.com/j2se/1.5.0/docs/api/java/io/FileInputStream.html#FileInputStream(java.io.File)
-		  if (file.isDirectory) {
+		  if (jfile.isDirectory) {
 			// this can occur even if this is a File object because the underlying filesystem
 			// can be changed after the File object is instantiated
 		    throw new PathIsADirectory(self.toPath, Some(fnf))
@@ -55,13 +55,13 @@ private[io] trait FileOps[T <: FileOps[T]] extends Location {
    */
   def outputStream(opt: WriteOption = WriteOption.defaultWriteOption): OutputStream = {
     try {
-      if (file.exists) {
+      if (jfile.exists) {
         if (!opt.openExisting) throw new LocationAlreadyExists(this)
       } else {
         if (!opt.createNew) throw new LocationDoesNotExist(this)
       }
       try {
-        val s = new jio.FileOutputStream(file, opt.append)
+        val s = new jio.FileOutputStream(jfile, opt.append)
         new JavaFileOutputStreamWrapper(opt, self.toFile, s)
       } catch {
     	// the two-level of catch are required because file.isDirectory and file.exists
@@ -70,11 +70,11 @@ private[io] trait FileOps[T <: FileOps[T]] extends Location {
           // FileOutputStream will claim that the file could not be found for a variety of reasons,
       	  // most of which having nothing to do with whether the file could be found or not
       	  // http://java.sun.com/j2se/1.5.0/docs/api/java/io/FileOutputStream.html#FileOutputStream(java.io.File,%20boolean)
-      	  if (file.isDirectory) {
+      	  if (jfile.isDirectory) {
       		// note that this can occur even if self is a File object, because changes
       		// can be made to the underlying file system after the File object is instantiated
       	    throw new PathIsADirectory(self.toPath, Some(fnf))
-      	  } else if (!file.exists) {
+      	  } else if (!jfile.exists) {
       	    throw new LocationCreationFailed(self, fnf.getMessage, Some(fnf))
       	  } else {
       	    //TODO: this probably the wrong exception to throw, but I'm not sure how to
@@ -92,8 +92,8 @@ private[io] trait FileOps[T <: FileOps[T]] extends Location {
    * @throws LocationDoesNotExist if this file does not exist on the filesystem
    * @throws AccessDenied if the file cannot be accessed
    */
-  def length: Long = {
-    val len = file.length
+  def length: Long = handleSecurity {
+    val len = jfile.length
     if ((len > 0L) || exists) len
     else throw new LocationDoesNotExist(this)
   }
@@ -175,9 +175,9 @@ private[io] trait FileOps[T <: FileOps[T]] extends Location {
 }
 
 final class File(inFile: jio.File) extends Location(inFile) with FileOps[File] {
-  if (file.isDirectory) throw new IllegalArgumentException(file.getName + " is an existing directory")
+  if (jfile.isDirectory) throw new IllegalArgumentException(jfile.getName + " is an existing directory")
   protected[io] def typeString = "file"
-  protected def toPath = new Path(file)
+  protected def toPath = new Path(jfile)
   protected def toFile: File = this
   def isFile = true
   def isDirectory = false
@@ -187,16 +187,16 @@ final class File(inFile: jio.File) extends Location(inFile) with FileOps[File] {
    * @throws LocationCreationFailed if an error occurs, with details in <code>reason</code> and <code>cause</code>
    */
   def create(createParents: Boolean = true): Unit = {
-	createLocation(createParents, () => file.createNewFile())
+	createLocation(createParents, () => jfile.createNewFile())
   }
   def rename(targetName: String, overwriteExisting: Boolean = false): File = new File(performRename(targetName, overwriteExisting))
 }
 
 object File {
   def apply(name: String): File = apply(Directory.current, name)
-  def apply(parent: Directory, name: String): File = new File(new jio.File(parent.file, name))
+  def apply(parent: Directory, name: String): File = new File(new jio.File(parent.jfile, name))
   def createTempFile(prefix: String, suffix: String, dir: Directory): File = {
-    val tmp = jio.File.createTempFile(prefix, suffix, dir.file)
+    val tmp = jio.File.createTempFile(prefix, suffix, dir.jfile)
     new File(tmp)
   }
   final val extensionRegex = """^.*\.([^.]+)$""".r

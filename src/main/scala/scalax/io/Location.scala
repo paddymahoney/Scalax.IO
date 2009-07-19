@@ -11,7 +11,7 @@ import java.{ io => jio }
  * @param inFile java.io.File object used to generate the file that will be wrapped
  */
 abstract class Location(inFile: jio.File) extends {
-  protected[io] final val file: jio.File = try {
+  protected[io] final val jfile: jio.File = try {
     inFile.getAbsoluteFile()
   } catch {
 	case se: SecurityException => {
@@ -22,11 +22,19 @@ abstract class Location(inFile: jio.File) extends {
       throw new PathResolutionFailed(name, parent, Some(se))
 	}
   }
+  protected def handleSecurity[R](block: => R): R = {
+    val result: R = try {
+      block	
+    } catch {
+      case se: SecurityException => throw new AccessDenied(this, Some(se))
+    }
+    result
+  }
   /** returns name such as "file" or "directory" to be used in messages */
   protected[io] def typeString: String
   final def isReadable: Boolean = try {
-	if (file.canRead) true        // the file exists and can be read
-	else if (file.exists) false   // the file exists and cannot be read
+	if (jfile.canRead) true        // the file exists and can be read
+	else if (jfile.exists) false   // the file exists and cannot be read
 	else parent match {           // the file does not exist...
       case Some(p) => p.isReadable// ...if it has a parent, see if it is readable
       case None => false          // ...if not, it must be a non-existent root, so it can't be read
@@ -35,8 +43,8 @@ abstract class Location(inFile: jio.File) extends {
 	case se: SecurityException => false
   }
   final def isWritable: Boolean = try {
-    if (file.canWrite) true        // the file exists and can be written
-    else if (file.exists) false    // the file exists and cannot be written
+    if (jfile.canWrite) true        // the file exists and can be written
+    else if (jfile.exists) false    // the file exists and cannot be written
     else parent match {            // the file does not exist...
       case Some(p) => p.isWritable // ...so if it has a parent, see if the parent is writable
       case None => false           // ...and if not, it must be a non-existent root
@@ -45,14 +53,14 @@ abstract class Location(inFile: jio.File) extends {
 	case se: SecurityException => false
   }
   final def exists: Boolean = try {
-	file.exists
+	jfile.exists
   } catch {
 	case se: SecurityException => throw new AccessDenied(this, Some(se))
   }
-  final def name = file.getName()
+  final def name = jfile.getName()
   // files are always absolute
   //final def isAbsolute = file.isAbsolute
-  final def isHidden = file.isHidden
+  final def isHidden = handleSecurity(jfile.isHidden)
   /**
    * true if this <code>Location</code> represents a directory
    * Note the small "d" in "directory," this location may be a <code>Path</code>
@@ -66,10 +74,10 @@ abstract class Location(inFile: jio.File) extends {
    * the number of seconds since the Epoch when this <code>Location</code was modified
    * @todo what should be returned if the file does not exist?
    */
-  final def lastModified = file.lastModified
+  final def lastModified = handleSecurity(jfile.lastModified)
   /** the directory containing this <code>Location</code> */
   final lazy val parent: Option[Directory] = {
-    file.getParentFile match {
+    jfile.getParentFile match {
       case null => None
       case dir => Some(new Directory(dir))
     }
@@ -77,8 +85,8 @@ abstract class Location(inFile: jio.File) extends {
   /**
    * the absolute path to the file, including the name of the file
    */
-  final def path = file.getPath
-  final def cannonicalPath: String = file.getCanonicalPath
+  final def path = jfile.getPath
+  final def cannonicalPath: String = handleSecurity(jfile.getCanonicalPath)
   def rename(targetName: String, overwriteExisting: Boolean = false): Location
   protected final def performRename(targetName: String, overwriteExisting: Boolean): jio.File = {
 	try {
@@ -93,7 +101,7 @@ abstract class Location(inFile: jio.File) extends {
 	    throw new RenameFailed(this, targetName, reason, Some(ad))
 	  }
 	}
-	val newFile = new jio.File(file.getParent, name)
+	val newFile = new jio.File(jfile.getParent, name)
 	if (!overwriteExisting) {
 	  try {
 		if (newFile.exists()) {
@@ -139,15 +147,15 @@ abstract class Location(inFile: jio.File) extends {
    */
   final def delete() {
 	try {
-	  if (!file.delete()) {
+	  if (!jfile.delete()) {
 		// nothing was deleted, try to figure out why
 		val (cause, reason) = if (!exists) {
 		  val cause = new LocationDoesNotExist(this)
 		  val reason = cause.message
 		  (Some(cause), reason)
-		} else if (file.isDirectory && file.listFiles.length > 0) {
+		} else if (jfile.isDirectory && jfile.listFiles.length > 0) {
 		  (None, "the directory is not empty")
-		} else if (!file.canWrite) {
+		} else if (!jfile.canWrite) {
 		  val cause = new AccessDenied(this, None)
 		  val reason = "the " + typeString + " is not writable"
 		  (Some(cause), reason)
@@ -182,7 +190,7 @@ abstract class Location(inFile: jio.File) extends {
       if (createParents) createParentDirectories()
       if (!performCreation()) {
 		// file creation failed, figure out why...
-		val (cause, reason) = if (file.exists()) {
+		val (cause, reason) = if (jfile.exists()) {
 		  val cause = new LocationAlreadyExists(this, None)
 		  val reason = cause.message
 		  (Some(cause), reason)

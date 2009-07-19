@@ -7,19 +7,19 @@ import java.{ io => jio }
 
 object Path {
   def apply(name: String): Path = apply(current, name)
-  def apply(parent: Directory, name: String): Path = new Path(new jio.File(parent.file, name))
-  def apply(parent: Path, name: String): Path = new Path(new jio.File(parent.file, name))
+  def apply(parent: Directory, name: String): Path = new Path(new jio.File(parent.jfile, name))
+  def apply(parent: Path, name: String): Path = new Path(new jio.File(parent.jfile, name))
   def current: Path =  apply(System.getProperty("user.dir"))
 }
 
 final class Path(inFile: jio.File) extends Location(inFile) with DirectoryOps[Path] {
   protected[io] def typeString = "path"
   protected def make(f: jio.File) = new Path(f)
-  protected def toDirectory: Directory = new Directory(file) 
-  def isDirectory = file.isDirectory
-  def isFile = file.isFile
+  protected def toDirectory: Directory = new Directory(jfile) 
+  def isDirectory = handleSecurity(jfile.isDirectory)
+  def isFile = handleSecurity(jfile.isFile)
   def /(name: String): Path = Path(this, name)
-  def asDirectory = if (isDirectory) Some(new Directory(file)) else None
+  def asDirectory = if (isDirectory) Some(new Directory(jfile)) else None
   //def asFile = if (isFile) Some(new File(file)) else None
   //def asFileOrDirectory: Option[Either[File, Directory]]
   def rename(targetName: String, overwriteExisting: Boolean = false): Path = {

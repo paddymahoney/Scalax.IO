@@ -8,7 +8,6 @@ import java.{ io => jio }
 
 trait DirectoryOps[T <: DirectoryOps[T]] extends Location { 
   self: T =>
-  protected def make(f: jio.File): T
   protected def toDirectory: Directory
   def /(path: String): Location
   def /(glob: GlobMapper) = new Traversable[Location] {
@@ -16,12 +15,14 @@ trait DirectoryOps[T <: DirectoryOps[T]] extends Location {
       self.tree.filter(x => glob.matches(x.pathFrom(self.toDirectory))).foreach(f)
   }
   def tree: Traversable[Path] = new Traversable[Path] {
-     def foreach[U](f: Path => U) = (new JFileTree(file)).foreach(jf => f(new Path(jf)))
+     def foreach[U](f: Path => U) = (new JFileTree(jfile)).foreach(jf => f(new Path(jf)))
   }
+  def contents: Traversable[Path] = handleSecurity(jfile.listFiles.map(new Path(_)))
+  def children: Traversable[Directory] = handleSecurity(jfile.listFiles.filter(_.isDirectory).map(new Directory(_)))
+  def files: Traversable[File] = handleSecurity(jfile.listFiles.filter(_.isFile).map(new File(_)))
 }
 
 final class Directory(inFile: jio.File) extends Location(inFile) with DirectoryOps[Directory] {
-  protected def make(f: jio.File) = new Directory(f)
   protected[io] def typeString = "directory"
   protected def toDirectory = this
   def rename(targetName: String, overwriteExisting: Boolean = false): Directory = {
@@ -31,38 +32,27 @@ final class Directory(inFile: jio.File) extends Location(inFile) with DirectoryO
   def isFile = false
   def isDirectory = true
   def /(name: String): Location = Path(this, name)
-  def create(createParents: Boolean = true): Unit = createLocation(createParents, () => file.mkdir())
+  def create(createParents: Boolean = true): Unit = createLocation(createParents, () => jfile.mkdir())
+  def file(name: String): File = File(this, name)
+  def directory(name: String): Directory = Directory(this, name)
+  def path(name: String): Path = Path(this, name)
   //def recursiveDelete
 }
 
 object Directory {
   def apply(name: String): Directory = apply(current, name)
-  def apply(parent: Directory, name: String) = new Directory(new jio.File(parent.file, name))
-  //temp
-  //home
+  def apply(parent: Directory, name: String) = new Directory(new jio.File(parent.jfile, name))
+  def temp: Directory = new Directory(new jio.File(System.getProperty("java.io.tmpdir")))
+  def home: Directory = new Directory(new jio.File(System.getProperty("user.home")))
   def current: Directory = new Directory(new jio.File(System.getProperty("user.dir")))
-  //roots
+  def roots: Traversable[Directory] = jio.File.listRoots.map(new Directory(_))
 }
 
 
 //
 //
 //trait Directory extends Location with DirectoryOpsMixin { self =>
-//  /** the subdirectories immediately under this directory */
-//  def children: Traversable[Directory]
-//  /** the <code>File</code>s within this <code>Directory</code>*/
-//  def files: Traversable[File]
-//  def contents: Traversable[Location]
-//  /**
-//   * atomically create new empty Location with this pathname if one does not exist
-//   * @return true if a file was created, false if not
-//   */
-//  def create: Boolean
-//  /** @return true */
-//  final def isDirectory = true
-//  /** @return false */
-//  final def isFile = false
-//  protected def asDirectory = self
+
 //  /**
 //   * Create a new file object within this directory (does not actually add the file to filesystem)
 //   * @param name the name of the new <code>File</code>
@@ -100,38 +90,6 @@ object Directory {
 //  //TODO: def deleteRecursively from scala.io.File
 //}
 //
-//import java.{ io => jio }
-//
-//trait JavaDirectoryFactory extends AbstractDirectoryFactory {
-//  type DirOps_R <: JavaDirectoryMixin
-//  type FileOps_R <: JavaFileMixin
-//  type Loc_R <: JavaDirectoryMixin
-//  def apply(file: jio.File): Loc_R
-//  def apply(name: String): Loc_R = apply(new jio.File(name))
-//  def apply(dir: DirOps_P, name: String): Loc_R = apply(JavaDirectory(dir), name)
-//  def temp: Loc_R = {
-//    val tmpDirName = System.getProperty("java.io.tmpdir")
-//    apply(tmpDirName)
-//  }
-//  def home: Loc_R = apply(System.getProperty("user.home"))
-//  def current: Loc_R = apply(System.getProperty("user.dir"))
-//  def roots: Traversable[Loc_R] = jio.File.listRoots.map(apply(_))
-//}
-//
-//object JavaDirectory extends DirectoryFactory with JavaDirectoryFactory {
-//  type DirOps_R = JavaDirectory
-//  type FileOps_R = JavaFile
-//  type Loc_R = JavaDirectory
-//  //TODO: this duplicates extractFile in JavaFileFactory, move into JavaLocationFactory
-//  protected def extractFile(loc: Location): jio.File = loc match {
-//    case jloc: JavaLocation => jloc.file
-//    case _ => new jio.File(loc.name) //TODO: should this use the absolute or canonical name instead?
-//  }
-//  def apply(file: jio.File): Loc_R = {
-//    if (file.isFile()) throw new IllegalArgumentException("The specified location is an existing file: " + file.getName())
-//    new JavaDirectory(file)
-//  }
-//}
 //
 //private[io] trait JavaDirectoryMixin extends DirectoryOpsMixin with JavaLocation {
 //  def /(path : String) = new JavaPath(new jio.File(file, path))
@@ -145,8 +103,7 @@ object Directory {
 //  type Loc_R = JavaDirectory
 //  def create = file.mkdirs()
 //  def children: Traversable[Loc_R] = file.listFiles.filter(_.isDirectory).map(new JavaDirectory(_))
-//  def files: Traversable[FileOps_R] = file.listFiles.filter(_.isFile).map(JavaFile(_))
-//  def newFile(name: String): FileOps_R = JavaFile(this, name)
+
 //  def newDirectory(name: String): Loc_R = JavaDirectory(this, name)
 //  def newPath(name: String): JavaPath = JavaPath(this, name)
 //}
