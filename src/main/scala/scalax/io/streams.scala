@@ -92,14 +92,29 @@ trait OutputStream extends IOStream[OutputStream] {
 
 
 trait WriterStream extends IOStream[WriterStream] {
-   /** Writes the sequence of string to the stream assuming each string is a line in the file */
-   def writeLines(input : Iterable[String], lineEnding : LineEndingStyle.LineEndingStyle = LineEndingStyle.current_platform_style) : Unit
-   /** Writes the sequence of characters to the stream in the stream's encoding. */
-   def writeChars(input : Iterable[Char]) : Unit
-   /** Writes a character to this stream */
-   def write(input : Char) : Unit   
-   /** Blocking call to write the contents of the input stream to this stream */
-   def pumpFrom(input : ReaderStream) : Unit = input >>> this
-   def <<<(input : ReaderStream) = pumpFrom(input)
-   def buffered : WriterStream
+  val lineEndingStyle: LineEndingStyle.LineEndingStyle
+  //TODO: implement writeLine in terms of write(String)
+  def writeLine(input: String): Unit = {
+	write(input)
+	write(LineEndingStyle.separator_for(lineEndingStyle))
+  }
+  /** Writes the sequence of string to the stream assuming each string is a line in the file */
+  //TODO: implement writeLines in terms of writeLine
+  def writeLines(input: Iterable[String]) = input.foreach(writeLine)
+  /**
+   * Writes the sequence of characters to the stream in the stream's encoding.
+   * @param input the characters to write
+   */
+  def writeChars(input: Iterable[Char]): Unit = input.foreach(write(_))
+  /**
+   * write the specified <code>String</code> using the stream's encoding
+   * @param input the string to write
+   */
+  def write(input: String): Unit
+  /** Writes a character to this stream */
+  def write(input: Char) : Unit   
+  /** Blocking call to write the contents of the input stream to this stream */
+  def pumpFrom(input: ReaderStream) : Unit = input >>> this
+  def <<<(input: ReaderStream) = pumpFrom(input)
+  def buffered : WriterStream
 }

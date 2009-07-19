@@ -29,8 +29,8 @@ content!!!!"""
    @Test
    def mustWriteLinesWithUnixStyle() {
           val jstream = new jio.StringWriter();
-          val writerStream = JavaConversions.writerStream(jstream)
-          writerStream.writeLines(List(""), LineEndingStyle.UNIX)
+          val writerStream = new JavaWriterStreamWrapper(jstream, LineEndingStyle.UNIX)
+          writerStream.writeLines(List(""))
           writerStream.close()
           val output = jstream.toString();
           assertTrue("Failed to output unix endline", output.endsWith("\n"))
@@ -39,8 +39,8 @@ content!!!!"""
    @Test
    def mustWriteLinesWithMacStyle() {
           val jstream = new jio.StringWriter();
-          val writerStream = JavaConversions.writerStream(jstream)
-          writerStream.writeLines(List(""), LineEndingStyle.MAC)
+          val writerStream = new JavaWriterStreamWrapper(jstream, LineEndingStyle.MAC)
+          writerStream.writeLines(List(""))
           writerStream.close()
           val output = jstream.toString();
           assertTrue("Failed to output unix endline", output.endsWith("\r"))
@@ -48,8 +48,8 @@ content!!!!"""
    @Test
    def mustWriteLinesWithWindowsStyle() {
           val jstream = new jio.StringWriter();
-          val writerStream = JavaConversions.writerStream(jstream)
-          writerStream.writeLines(List(""), LineEndingStyle.WINDOWS)
+          val writerStream = new JavaWriterStreamWrapper(jstream, LineEndingStyle.WINDOWS)
+          writerStream.writeLines(List(""))
           writerStream.close()
           val output = jstream.toString();
           assertTrue("Failed to output unix endline", output.endsWith("\r\n"))

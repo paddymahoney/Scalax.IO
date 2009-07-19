@@ -5,4 +5,8 @@ project/boot
 project/plugins/target
 project/plugins/lib_managed
 project/plugins/src_managed
+.classpath
+.externalToolBuilders/
+.project
+.settings/
 

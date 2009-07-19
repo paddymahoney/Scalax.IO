@@ -59,18 +59,19 @@ class TestFile {
 	       expected.deepMkString(", ") + " actual: " + buf.slice(0, r).deepMkString(", "), compare(0))
   }
   //1. Create a file for a file that exists
-  @Test def testCreateFileWhenAlreadyExists() {
+  @Test(expected=classOf[LocationCreationFailed]) def testCreateFileWhenAlreadyExists() {
     withExistingFile() { tmpFile =>
       val f = File(tmpFile.getName())
       assertTrue("failed to recognize existence of file", f.exists)
-      assertFalse("f.create() should have returned false because file already exists", f.create())
+      //assertFalse("f.create() should have returned false because file already exists", f.create())
+      f.create()
     }
   }
   //2. Create a file that doesn't exist
   @Test def testCreateFileWhenDoesNotExist() {
     withNonExistentFile { tmpFile =>
       val f = File(tmpFile.getName())
-      assertTrue("file creation failed", f.create())
+      f.create()
     }
   }
   //3. Try to create a file with a pathname representing an existing directory, expect failure
@@ -91,7 +92,7 @@ class TestFile {
       checkContents(tmpFile, Array(1.toByte))
     }
   }
-  @Test(expected=classOf[FileAlreadyExists]) def createNewFileOutputStreamFail() {
+  @Test(expected=classOf[LocationAlreadyExists]) def createNewFileOutputStreamFail() {
     withExistingFile() { existingFile =>
       val f = File(existingFile.getName())
       val s = f.outputStream(WriteOption.NewFile)
@@ -110,7 +111,7 @@ class TestFile {
       assertFalse("the file should have been deleted when the output stream was closed", f.exists)
     }
   }
-  @Test(expected=classOf[FileAlreadyExists]) def createNewTempFileOutputStreamFail() {
+  @Test(expected=classOf[LocationAlreadyExists]) def createNewTempFileOutputStreamFail() {
     withExistingFile() { existingFile =>
       val f = File(existingFile.getName())
       val s = f.outputStream(WriteOption.NewTempFile)
@@ -129,7 +130,7 @@ class TestFile {
       checkContents(existingFile, Array(1.toByte, 2.toByte))
     }
   }
-  @Test(expected=classOf[FileDoesNotExist]) def appendToExistingFileFail() {
+  @Test(expected=classOf[LocationDoesNotExist]) def appendToExistingFileFail() {
     withNonExistentFile { nonExistentFile =>
       val f = File(nonExistentFile.getName())
       val s = f.outputStream(WriteOption.AppendToExisting)
@@ -147,7 +148,7 @@ class TestFile {
       checkContents(existingFile, Array(2.toByte))
     }
   }
-  @Test(expected=classOf[FileDoesNotExist]) def truncateExistingFileFail() {
+  @Test(expected=classOf[LocationDoesNotExist]) def truncateExistingFileFail() {
     withNonExistentFile { nonExistentFile =>
       val f = File(nonExistentFile.getName())
       val s = f.outputStream(WriteOption.TruncateExisting)
@@ -209,10 +210,10 @@ class TestFile {
       assertEquals("length of empty file should have been zero", f.length, 0L)
     }
   }
-  @Test def fileLengthOfNonExistentFile() {
+  @Test(expected=classOf[LocationDoesNotExist]) def fileLengthOfNonExistentFile() {
     withNonExistentFile { nonExistentFile =>
       val f = File(nonExistentFile.getName())
-      assertEquals("length of non-existent file should have been zero", f.length, 0L)
+      f.length
     }
   }
 }

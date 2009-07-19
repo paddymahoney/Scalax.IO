@@ -142,7 +142,6 @@ private[io] object JavaStreamHelp {
 		}
 }
 
-
 class JavaInputStreamWrapper(protected val s: jio.InputStream) extends InputStream {
    /** Returns a buffered version of this input stream */
    def buffered : InputStream = new JavaInputStreamWrapper(new jio.BufferedInputStream(s)) {
@@ -213,47 +212,31 @@ class JavaOutputStreamWrapper(protected val s: jio.OutputStream) extends OutputS
    def writer(implicit codec: Codec = Codec.default) : WriterStream = new JavaWriterStreamWrapper(new jio.OutputStreamWriter(s, codec.encoder))
 }
 
-object JavaFileOutputStreamWrapper {
-  def apply(opt: WriteOption, file: jio.File) = {
-    if (file.exists()) {
-      if (!opt.openExisting) throw new FileAlreadyExists(file.getName())
-    } else {
-      if (!opt.createNew) throw new FileDoesNotExist(file.getName())
-    }
-    val s = new jio.FileOutputStream(file, opt.append)
-    new JavaFileOutputStreamWrapper(opt, file, s)
-  }
-}
 
-class JavaFileOutputStreamWrapper protected (val opt: WriteOption, protected val file: jio.File, override protected val s: jio.FileOutputStream) 
+
+class JavaFileOutputStreamWrapper(val opt: WriteOption, protected val file: File, override protected val s: jio.FileOutputStream) 
       extends JavaOutputStreamWrapper(s) {
   override def close(): Unit = {
     super.close()
-    if (opt.deleteOnClose) {
-      if (!file.delete()) throw new FileDeletionFailed(file.getName())
-    }
+    if (opt.deleteOnClose) file.delete()
   }
 } 
 
-class JavaWriterStreamWrapper(s : jio.Writer) extends WriterStream {
-   /** Returns a buffered version of this stream */
-   def buffered : WriterStream = new JavaWriterStreamWrapper(new jio.BufferedWriter(s)) {
-         override def buffered = this
-   }
-   /** Closes this stream */
-   def close() : Unit = s.close()
-   /** Writes the sequence of string to the stream assuming each string is a line in the file */
-   def writeLines(input : Iterable[String], lineEnding : LineEndingStyle.LineEndingStyle = LineEndingStyle.current_platform_style) : Unit = {
-       def writeLine(input : String) { 
-          s.write(input)
-          s.write(LineEndingStyle.separator_for(lineEnding))
-       }
-       input.foreach(writeLine)       
-   }
-   /** Writes the sequence of characters to the stream in the stream's encoding. */
-   def writeChars(input : Iterable[Char]) : Unit = input.foreach(s.write(_))
-   /** Writes a character to this stream */
-   def write(input : Char) : Unit = s.write(input)
+class JavaWriterStreamWrapper(protected val s: jio.Writer, 
+		                      val lineEndingStyle: LineEndingStyle.LineEndingStyle = LineEndingStyle.current_platform_style)
+	  extends WriterStream {
+  /** Returns a buffered version of this stream */
+  def buffered: WriterStream = s match {
+	case bw: jio.BufferedWriter => this
+	case _ => new JavaWriterStreamWrapper(new jio.BufferedWriter(s)) {
+      override def buffered = this
+    }
+  }
+  /** Closes this stream */
+  def close(): Unit = s.close()
+  /** Writes a character to this stream */
+  def write(input: Char): Unit = s.write(input)
+  def write(input: String): Unit = s.write(input)
 }
 
 object JavaConversions {
