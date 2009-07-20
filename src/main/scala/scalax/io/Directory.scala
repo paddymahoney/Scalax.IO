@@ -9,7 +9,7 @@ import java.{ io => jio }
 trait DirectoryOps[T <: DirectoryOps[T]] extends Location { 
   self: T =>
   protected def toDirectory: Directory
-  def /(path: String): Location
+  def /(path: String): Path
   def /(glob: GlobMapper) = new Traversable[Location] {
     def foreach[U](f: Location => U) =
       self.tree.filter(x => glob.matches(x.pathFrom(self.toDirectory))).foreach(f)
@@ -20,6 +20,18 @@ trait DirectoryOps[T <: DirectoryOps[T]] extends Location {
   def contents: Traversable[Path] = handleSecurity(jfile.listFiles.map(new Path(_)))
   def children: Traversable[Directory] = handleSecurity(jfile.listFiles.filter(_.isDirectory).map(new Directory(_)))
   def files: Traversable[File] = handleSecurity(jfile.listFiles.filter(_.isFile).map(new File(_)))
+  def createTempFile(prefix: String, suffix: Option[String] = None): File = {
+	try {
+      val tjfile = jio.File.createTempFile(prefix, suffix.getOrElse(null), jfile)
+      new File(tjfile)
+	} catch {
+      case se: SecurityException => {
+    	val cause = new AccessDenied(self, Some(se))
+    	throw new LocationCreationFailed(self, se.getMessage, Some(cause))
+      }
+      case ioe: jio.IOException => throw new LocationCreationFailed(self, ioe.getMessage, Some(ioe))
+	}
+  }
 }
 
 final class Directory(inFile: jio.File) extends Location(inFile) with DirectoryOps[Directory] {
@@ -31,7 +43,7 @@ final class Directory(inFile: jio.File) extends Location(inFile) with DirectoryO
   }
   def isFile = false
   def isDirectory = true
-  def /(name: String): Location = Path(this, name)
+  def /(name: String): Path = Path(this, name)
   def create(createParents: Boolean = true): Unit = createLocation(createParents, () => jfile.mkdir())
   def file(name: String): File = File(this, name)
   def directory(name: String): Directory = Directory(this, name)

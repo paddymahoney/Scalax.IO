@@ -10,7 +10,6 @@ import java.{ io => jio }
 
 private[io] trait FileOps[T <: FileOps[T]] extends Location {
   self: T =>
-  //protected def make(f: jio.File): T
   protected def toFile: File
   protected def toPath: Path
   /**
