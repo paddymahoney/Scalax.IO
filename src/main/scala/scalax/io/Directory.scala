@@ -9,7 +9,7 @@ import java.{ io => jio }
 trait DirectoryOps[T <: DirectoryOps[T]] extends Location { 
   self: T =>
   protected def toDirectory: Directory
-  def /(path: String): Path
+  def /(name: String): Path = Path(self.toDirectory, name)
   def /(glob: GlobMapper) = new Traversable[Location] {
     def foreach[U](f: Location => U) =
       self.tree.filter(x => glob.matches(x.pathFrom(self.toDirectory))).foreach(f)
@@ -43,7 +43,6 @@ final class Directory(inFile: jio.File) extends Location(inFile) with DirectoryO
   }
   def isFile = false
   def isDirectory = true
-  def /(name: String): Path = Path(this, name)
   def create(createParents: Boolean = true): Unit = createLocation(createParents, () => jfile.mkdir())
   def file(name: String): File = File(this, name)
   def directory(name: String): Directory = Directory(this, name)

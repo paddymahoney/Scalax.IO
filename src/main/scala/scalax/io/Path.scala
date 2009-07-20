@@ -18,7 +18,6 @@ final class Path(inFile: jio.File) extends Location(inFile) with DirectoryOps[Pa
   protected def toDirectory: Directory = new Directory(jfile) 
   def isDirectory = handleSecurity(jfile.isDirectory)
   def isFile = handleSecurity(jfile.isFile)
-  def /(name: String): Path = Path(this, name)
   def asDirectory = if (isDirectory) Some(new Directory(jfile)) else None
   //def asFile = if (isFile) Some(new File(file)) else None
   //def asFileOrDirectory: Option[Either[File, Directory]]
