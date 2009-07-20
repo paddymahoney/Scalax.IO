@@ -6,7 +6,7 @@ import collection.Traversable
 import util.matching.Regex
 import java.{ io => jio }
 
-trait DirectoryOps[T <: DirectoryOps[T]] extends Location { 
+private[io] trait DirectoryOps[T <: DirectoryOps[T]] extends Location { 
   self: T =>
   protected def toDirectory: Directory
   def /(name: String): Path = Path(self.toDirectory, name)
