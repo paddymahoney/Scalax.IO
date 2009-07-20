@@ -10,16 +10,33 @@ private[io] trait DirectoryOps[T <: DirectoryOps[T]] extends Location {
   self: T =>
   protected def toDirectory: Directory
   def /(name: String): Path = Path(self.toDirectory, name)
-  def /(glob: GlobMapper) = new Traversable[Location] {
-    def foreach[U](f: Location => U) =
+  def /(glob: GlobMapper) = new Traversable[Path] {
+    def foreach[U](f: Path => U) =
       self.tree.filter(x => glob.matches(x.pathFrom(self.toDirectory))).foreach(f)
+  }
+  def /(regex: Regex) = new Traversable[Path] {
+    def foreach[U](f: Path => U) =
+      self.tree.filter( x => regex.pattern.matcher(x.pathFrom(self.toDirectory)).matches).foreach(f)
   }
   def tree: Traversable[Path] = new Traversable[Path] {
      def foreach[U](f: Path => U) = (new JFileTree(jfile)).foreach(jf => f(new Path(jf)))
   }
-  def contents: Traversable[Path] = handleSecurity(jfile.listFiles.map(new Path(_)))
-  def children: Traversable[Directory] = handleSecurity(jfile.listFiles.filter(_.isDirectory).map(new Directory(_)))
-  def files: Traversable[File] = handleSecurity(jfile.listFiles.filter(_.isFile).map(new File(_)))
+  def contents: Traversable[Path] = handleSecurity {
+    val files = jfile.listFiles()
+    if (files eq null) {
+      // File.listFiles returns null if the directory does not exist or if it is a regular file
+      if (jfile.exists) {
+    	// the path exists on the file system, so it must be a file and not a directory
+        throw new PathIsAFile(self)
+      } else {
+    	// the path doesn't exist, so it can't have any contents
+    	throw new LocationDoesNotExist(self)
+      }
+    }
+    files.map(new Path(_))
+  }
+  def children: Traversable[Directory] = contents.filter(_.isDirectory).map(p => new Directory(p.jfile))
+  def files: Traversable[File] = contents.filter(_.isFile).map(p => new File(p.jfile))
   def createTempFile(prefix: String, suffix: Option[String] = None): File = {
 	try {
       val tjfile = jio.File.createTempFile(prefix, suffix.getOrElse(null), jfile)
@@ -60,65 +77,6 @@ object Directory {
 }
 
 
-//
-//
-//trait Directory extends Location with DirectoryOpsMixin { self =>
-
-//  /**
-//   * Create a new file object within this directory (does not actually add the file to filesystem)
-//   * @param name the name of the new <code>File</code>
-//   * @return a new <code>File</code> object for a file within this directory
-//   */
-//  def newFile(name: String): File
-//  /**
-//   * Create a new subdirectory within this directory (does not actually add the directory to the filesystem)
-//   * @param name the name of the new <code>Directory</code>
-//   * @return a new <code>Directory</code> object for a directory within this <code>Directory</code>
-//   */
-//  def newDirectory(name: String): Directory
-//  /**
-//   * Create a new path within this directory (does not actually add path to the filesystem)
-//   * @param name the name of the new <code>Path</code>
-//   * @return a new <code>Path</code> object for a path within this <code>Directory</code<
-//   */ 
-//  def newPath(name: String): Path
-//}
-//
-//private[io] trait DirectoryOpsMixin extends Location { self =>
-//  protected def asDirectory: Directory
-//  def /(path: String): Path  // this needs to be a Path instead of a Location so that several levels
-//			     // can be specified together
-//  def /(glob: GlobMapper) = new Traversable[Location] {
-//    def foreach[U](f: Location => U) =
-//      self.tree.filter(x => glob.matches(x.pathFrom(self.asDirectory))).foreach(f)
-//  }
-//  def /(regex: Regex) = new Traversable[Location] {
-//    def foreach[U](f: Location => U) =
-//      self.tree.filter( x => regex.pattern.matcher(x.pathFrom(self.asDirectory)).matches).foreach(f)
-//  }
-//  /** the full contents of this directory tree */
-//  def tree: Traversable[Location]
-//  //TODO: def deleteRecursively from scala.io.File
-//}
-//
-//
-//private[io] trait JavaDirectoryMixin extends DirectoryOpsMixin with JavaLocation {
-//  def /(path : String) = new JavaPath(new jio.File(file, path))
-
-//  def contents: Traversable[JavaPath] = file.listFiles.map(new JavaPath(_))
-//}
-//
-//final class JavaDirectory(protected[io] val file: jio.File) extends Directory with JavaDirectoryMixin {
-//  type FileOps_R = JavaFile
-//  type DirOps_R = JavaDirectory
-//  type Loc_R = JavaDirectory
-//  def create = file.mkdirs()
-//  def children: Traversable[Loc_R] = file.listFiles.filter(_.isDirectory).map(new JavaDirectory(_))
-
-//  def newDirectory(name: String): Loc_R = JavaDirectory(this, name)
-//  def newPath(name: String): JavaPath = JavaPath(this, name)
-//}
-//
 //// Note: calling list() on a file (as in not a directory) returns null
 ////       calling list() on an empty directory returns an empty array
 //

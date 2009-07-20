@@ -140,5 +140,5 @@ class PathIsADirectory(val name: String, val parent: Option[String], val cause: 
 class PathIsAFile(val name: String, val parent: Option[String], val cause: Option[Throwable])
 	  extends jio.IOException(pathIsFileMsg(name, parent))
 	  with IOException {
-  def this(p: Path, cause: Option[Throwable] = None) = this(p.name, parentPath(p), cause)
+  def this(p: Location, cause: Option[Throwable] = None) = this(p.name, parentPath(p), cause)
 }
