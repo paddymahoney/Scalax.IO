@@ -1,7 +1,7 @@
 
 package scalax.io
 
-import resource._
+import scalax.resource._
 import org.junit._
 import Assert._
 
