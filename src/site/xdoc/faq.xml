@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document>
+	<properties>
+		<title>Scalax.Io Frequently Asked Questions</title>
+		<authors>
+			<person name="Josh Suereth" />
+			<person name="Erik Engebrecht" />
+		</authors>
+	</properties>
+	<body>
+		<h1>Frequently Asked Questions</h1>
+		
+		<section name="File Abstractions">
+			<dl>
+				<dt>TBD</dt>
+				<dd>Placeholder</dd>
+				
+			</dl>
+		</section>
+		
+		<section name="I/O Abstractions">
+			<dl>
+				<dt>Is there any NIO equivalent in Scalax.IO?</dt>
+				<dd>Not yet, but one is planned</dd>
+			</dl>
+		</section>
+	</body>
+</document>

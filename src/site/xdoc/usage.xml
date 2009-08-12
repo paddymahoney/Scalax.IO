@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document>
+  <properties>
+    <title>Scalax.IO</title>
+    <authors>
+      <person name="Josh Suereth" />
+    </authors>
+  </properties>
+  <body>
+    <h1>Using the I/O Layer</h1>
+    <section name="Pumping Streams">
+      <p>The Scalax.IO library provides the >>> or pumpTo methods for dumping a reader/inputstream into a writer/outputstream</p>
+      <source>
+        <![CDATA[
+      val readerResource = ManagedResource(JavaConversions.readerStream(new jio.StringReader(input)))
+      val writer = new jio.StringWriter()
+      val writerResource = ManagedResource(JavaConversions.writerStream(writer))       
+      // Make sure resources are opened and closed properly by executing inside a for-expression
+      for (in <- readerResource; out <- writerResource) in >>> out
+
+            ]]>
+      </source>
+    </section>
+
+  </body>
+</document>
