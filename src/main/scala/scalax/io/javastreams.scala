@@ -15,7 +15,9 @@ package scalax.io
 import _root_.java.{io => jio}
 import _root_.scala.io.Codec
 import _root_.scala.annotation.tailrec
-
+/**
+ * This is a basic abstraction for an iterator that fetches new content as needed.
+ */
 private[io] abstract class FetchIterator[T] extends Iterator[T] {
 
 	var fetched = false
@@ -167,9 +169,49 @@ class JavaInputStreamWrapper(protected val s: jio.InputStream) extends InputStre
 	
 }
 
+class JavaObjectInputStreamWrapper(protected val s : jio.ObjectInputStream) extends ObjectInputStream {
+   /** Returns a buffered version of this stream */
+   def buffered : ObjectInputStream = this
+   /** Closes this stream */
+   def close() : Unit = s.close()
+   
+   /** Returns an iterable over all the serialized objects in this inputStream. */
+   def objects : Iterable[Any] = new Iterable[Any] {
+      def iterator = new FetchIterator[Any] {
+         override def fetchNext() = {
+          val input = s.readObject()
+          if(input != null) Some(input) else None
+       }
+     }
+   }
+   
+   /** Blocking call to read all serialized objects in this input stream and return them in memory */
+   def slurp : Array[Any] = {
+       val buffer = new scala.collection.mutable.ArrayBuffer[Any]
+       val iterator = objects.iterator
+       while(iterator.hasNext) {
+          buffer += iterator.next
+       }
+       return buffer.toArray
+   }
+   /** Blocking call to serialize the objects from the ObjectInputStream to this stream */                     
+   def pumpTo(output : ObjectOutputStream) : Unit = {
+       for(obj <- objects) {
+          output.writeObject(obj)
+       }
+   }
+}
+
 class JavaReaderStreamWrapper(s : jio.Reader) extends ReaderStream {
    /** Lazily created sequence of bytes in this input stream.  This will refetch bytes every time it's iterated over */
-   def slurp : Array[Char] = null
+   def slurp : Array[Char] = {
+      val buffer = new scala.collection.mutable.ArrayBuffer[Char]
+      val iterator = chars.iterator
+      while(iterator.hasNext) {
+         buffer += iterator.next
+      }
+      return buffer.toArray
+   }
    /** Blocking call to write the contents of this stream to an output file */
    def pumpTo(output : WriterStream) : Unit = {
        for(char <- chars) {
@@ -212,7 +254,26 @@ class JavaOutputStreamWrapper(protected val s: jio.OutputStream) extends OutputS
    def writer(implicit codec: Codec = Codec.default) : WriterStream = new JavaWriterStreamWrapper(new jio.OutputStreamWriter(s, codec.encoder))
 }
 
+class JavaObjectOutputStreamWrapper(protected val s : jio.ObjectOutputStream) extends ObjectOutputStream {
+   def buffered = this
+   /** Closes this stream */
+   def close() : Unit = s.close()
+   
+   
+   /** Serializes an Object to this output stream */
+   def writeObject[A](input : A) : Unit = s.writeObject(input)
 
+   /** Serializes all of a collection of objects to this output stream */
+   def writeAll[A](input : Iterable[A]) : Unit = {
+        for(b <- input) {
+           writeObject(b)
+       }
+    } 
+   /** Pumps all objects from a given input stream into this output stream */
+   def pumpFrom(input : ObjectInputStream) : Unit = input.pumpTo(this)
+
+
+}
 
 class JavaFileOutputStreamWrapper(val opt: WriteOption, protected val file: File, override protected val s: jio.FileOutputStream) 
       extends JavaOutputStreamWrapper(s) {
@@ -238,6 +299,9 @@ class JavaWriterStreamWrapper(protected val s: jio.Writer,
   def write(input: Char): Unit = s.write(input)
   def write(input: String): Unit = s.write(input)
 }
+
+
+
 
 object JavaConversions {
    implicit def inputStream(s : jio.InputStream) = new JavaInputStreamWrapper(s)

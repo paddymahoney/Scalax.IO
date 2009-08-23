@@ -150,7 +150,7 @@ private[io] trait FileOps[T <: FileOps[T]] extends Location {
    * @throws LocationDoesNotExist if the file does not exist
    * @throws AccessDenied if the file could not be opened for reading
    */
-  def slurp: Array[Byte] = for(in <- ManagedResource(inputStream)) yield in.slurp
+  def slurp: Array[Byte] = ManagedResource(inputStream).flatMap(_.slurp)
 
   /**
    * @param lines

@@ -48,5 +48,17 @@ class TestGlobMatcher {
      assertEquals("Simple glob file/directory names should not match extra directories", false, globMatcher.matches("/tmp/two/file"))
      ()
   }
+  @Test 
+  def mustMatchDirGlobFileNames() {
+     val globMatcher = new GlobMapper("**/foo.txt")
+     
+     /*assertEquals("Simple glob file/directory names should match", true, globMatcher.matches("foo.txt"))     
+     assertEquals("Simple glob file/directory names should match", true, globMatcher.matches("tmp/foo.txt"))
+     assertEquals("Simple glob file/directory names should match", true, globMatcher.matches("tmp/foo/hello/foo.txt"))
+     assertEquals("Simple glob file/directory names should match", false, globMatcher.matches("tmp/foo/hellofoo.txt"))
+     assertEquals("Simple glob file/directory names should match", false, globMatcher.matches("hellofoo.txt"))
+     assertEquals("Simple glob file/directory names should match", false, globMatcher.matches("tmp/hellofoo.txt"))*/
+     ()
+  }
  
 }

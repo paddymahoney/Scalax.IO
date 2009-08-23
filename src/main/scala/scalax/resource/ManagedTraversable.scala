@@ -12,43 +12,26 @@
 
 package scalax.resource
 
-//TODO - Ensure all Iterable methods are available *except* iterator/elements
-
-/** A trait which is approximately isomorphic to Iterable, but which manages the
- * lifecycle of the underlying data source, and is generally non-strict. */
-trait ManagedTraversible[+A] extends collection.Traversable[A] { self =>
+/** This trait provides a means to ensure traversable access to items inside a resource, while ensuring that the
+ * resource is opened/closed appropriately before/after the traversal.   */
+trait ManagedTraversable[+A] extends collection.Traversable[A] {
+  /** The type of the handle returned when opening the resource */
   type Handle
+  /**
+   * The resource we plan to traverse through  
+   */
   val resource : ManagedResource[Handle]
-  // N.B. these functions are permitted to trash the handle
+
+  /**
+   * This method gives us an iterator over items in a resource.                               
+   */
   protected def iterator(v : Handle) : Iterator[A]
 
 
-
-  def foreach[U](f: A => U): Unit = for(v <- resource) {
-      val i = iterator(v)
-      while(i.hasNext) {
-          f(i.next)
-      }
-  }
-
-
-  /*
-
-
-  // Abstract trait to use when lazily mapping or flatMapping
-  private trait Child[+B] extends ManagedTraversible[B] {
-		type Handle = self.Handle
-		val resource = self.resource
-  }
-
-  def map[B](f: A => B): ManagedIterable[B] = new Child[B] {
-     protected def iterator(v : Handle) = self.iterator(v).map(f)
-  }
-
-  def flatMap[B](f : A => Iterable[B]) : ManagedIterable[B] = new Child[B] {
-     protected def iterator(v : Handle) = self.iterator(v).flatMap(x => f(x).elements)
-  }
-*/
-
+  /**
+   * Executes a given function against all items in the resource.  The resource is opened/closed during the call
+   * to this method.
+   */
+  def foreach[U](f: A => U): Unit = resource.flatMap( x => iterator(x).foreach(f) )
 
 }
