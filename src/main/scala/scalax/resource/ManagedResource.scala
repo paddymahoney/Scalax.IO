@@ -52,7 +52,7 @@ trait ManagedResource[+A] extends ManagedResourceOps[A] { self =>
 	/** Closes a resource, supressing all exceptions in the case where an exception has already 
 	 * occured during the usage of the resource.  
 	 * 
-	 * Sub-classes should override this to ignore only the exceptions thrown during a close of the resource.
+	 * Sub-classes should override this to ignore only the exceptions thrown during a close of the resource, or to change behavior of a "closeAfterException" path
 	 */
 	protected def unsafeCloseQuietly(v : Handle) {
 		try {
@@ -68,14 +68,14 @@ trait ManagedResource[+A] extends ManagedResourceOps[A] { self =>
 	/** Acquires the resource for the duration of the supplied function. */
 	def acquireFor[B](f : A => B) : B = {
 		val v = unsafeOpen()
-		var exception = true  /*Mutability YUK! - at least we wont try to close if we've already closed*/
+		var okToClose = true  /*Mutability YUK! - at least we wont try to close if we've already closed*/
 		try {
 			val r = f(translate(v))
 			unsafeClose(v)
-         exception = false
+         okToClose = false
 			r
 		} finally {
-          if(exception) 
+          if(okToClose) 
  			   unsafeCloseQuietly(v)
 		}
 	}	
@@ -102,8 +102,8 @@ object ManagedResource {
 	/**
 	 * Creates a ManagedResource for anything implementing the java.io.Closeable interface.
 	 * 
-	 * This method ensures that only java.io.IOException's are supressed in the event of an exception occuring during
-	 * the closing of a resource when an early exception has already occured
+	 * This method ensures that only java.io.IOException's are suppressed in the event of an exception occurring during
+	 * the closing of a resource when an early exception has already occurred
 	 */
 	def managedCloseable[A <: java.io.Closeable](opener : => A) = new UntranslatedManagedResource[A] {
 	   def unsafeOpen() = opener

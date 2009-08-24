@@ -7,7 +7,7 @@ import _root_.scalax.resource.{ManagedResource,ManagedTraversable}
  */
 class ManagedByteStream[A <: InputStream](val resource : ManagedResource[A]) extends ManagedTraversable[Byte] {
   type Handle = A
-  protected def iterator(v : A) : Iterator[Byte] = v.bytes.iterator
+  protected def iterator(v : A) : Iterator[Byte] = v.bytes
 }
 
 /**
@@ -15,7 +15,7 @@ class ManagedByteStream[A <: InputStream](val resource : ManagedResource[A]) ext
  */
 class ManagedCharStream[A <: ReaderStream](val resource : ManagedResource[A]) extends ManagedTraversable[Char] {
   type Handle = A
-  protected def iterator(v : A) : Iterator[Char] = v.chars.iterator
+  protected def iterator(v : A) : Iterator[Char] = v.chars
 }
 
 /**
@@ -23,7 +23,16 @@ class ManagedCharStream[A <: ReaderStream](val resource : ManagedResource[A]) ex
  */
 class ManagedLineStream[A <: ReaderStream](val resource : ManagedResource[A], lineEnding : LineEndingStyle.LineEndingStyle = LineEndingStyle.current_platform_style) extends ManagedTraversable[String] {
   type Handle = A
-  protected def iterator(v : A) : Iterator[String] = v.lines.iterator
+  protected def iterator(v : A) : Iterator[String] = v.lines
+  
+}
+
+/**
+ * A Stream of objects which is deserialized from a managed resource.   Iterating over the objects is done through a ManagedTraversable 
+ */
+class ManagedObjectStream[A <: ObjectInputStream](val resource : ManagedResource[A]) extends ManagedTraversable[Any] {
+  type Handle = A
+  protected def iterator(v : A) : Iterator[Any] = v.objects
   
 }
 
@@ -38,5 +47,7 @@ object ManagedStreams {
    def chars[A <: ReaderStream](input : => A) = new ManagedCharStream(ManagedResource(input))
 
    def bytes[A <: InputStream](input : => A) = new ManagedByteStream(ManagedResource(input))
+   
+   def objects[A <: ObjectInputStream](input : => A) = new ManagedObjectStream(ManagedResource(input))
 
 }

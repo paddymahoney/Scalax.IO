@@ -150,9 +150,8 @@ class JavaInputStreamWrapper(protected val s: jio.InputStream) extends InputStre
        override def buffered = this
    }
    /** Lazily created sequence of bytes in this input stream.  This will refetch bytes every time it's iterated over */
-   def bytes : Iterable[Byte] = new Iterable[Byte] {
-       def iterator = JavaStreamHelp.bytes(s)
-   }
+   def bytes : Iterable[Byte] = JavaStreamHelp.bytes(s)
+   
    /** Eagirly fetched array of bytes from the entire input stream */
    def slurp : Array[Byte] = JavaStreamHelp.slurp(s)
    /** Returns a reader for this InputStream */
@@ -176,12 +175,10 @@ class JavaObjectInputStreamWrapper(protected val s : jio.ObjectInputStream) exte
    def close() : Unit = s.close()
    
    /** Returns an iterable over all the serialized objects in this inputStream. */
-   def objects : Iterable[Any] = new Iterable[Any] {
-      def iterator = new FetchIterator[Any] {
-         override def fetchNext() = {
+   def objects : Iterator[Any] =  new FetchIterator[Any] {
+      override def fetchNext() = {
           val input = s.readObject()
           if(input != null) Some(input) else None
-       }
      }
    }
    
@@ -223,13 +220,10 @@ class JavaReaderStreamWrapper(s : jio.Reader) extends ReaderStream {
    /** Returns a buffered version of this input stream */
    def buffered : ReaderStream = this
    /** Lazily created sequence of lines in this input stream.  This will refetch lines every time it's iterated over */
-   def lines(implicit lineEnding : LineEndingStyle.LineEndingStyle = LineEndingStyle.current_platform_style) : Iterable[String] = new Iterable[String] {
-      def iterator = JavaStreamHelp.lines(s, lineEnding)
-   }
+   def lines(implicit lineEnding : LineEndingStyle.LineEndingStyle = LineEndingStyle.current_platform_style) : Iterable[String] = JavaStreamHelp.lines(s, lineEnding)
+   
    /** Lazily created sequence of characters in this input stream.  This will refetch characters every time it's iterated over */
-   def chars : Iterable[Char] = new Iterable[Char] {
-      def iterator = JavaStreamHelp.chars(s)
-   }
+   def chars : Iterable[Char] = JavaStreamHelp.chars(s)
 }
 
 class JavaOutputStreamWrapper(protected val s: jio.OutputStream) extends OutputStream {
@@ -308,6 +302,7 @@ object JavaConversions {
    implicit def outputStream(s : jio.OutputStream) = new JavaOutputStreamWrapper(s)
    implicit def readerStream(s : jio.Reader) = new JavaReaderStreamWrapper(s)
    implicit def writerStream(s : jio.Writer) = new JavaWriterStreamWrapper(s)
-
+   implicit def objectInputStream(s : jio.ObjectInputStream) = new JavaObjectInputStreamWrapper(s)
+   implicit def objectOutputStream(s : jio.ObjectOutputStream) = new JavaObjectOutputStreamWrapper(s)
 }
 

@@ -63,7 +63,7 @@ trait IOStream[T] {
  */
 trait InputStream extends IOStream[InputStream] {
    /** Lazily created sequence of bytes in this input stream.  This will refetch bytes every time it's iterated over */
-   def bytes : Iterable[Byte]
+   def bytes : Iterator[Byte]
    /** Eagerly loaded array of bytes from the rest of this input stream */
    def slurp : Array[Byte]
    /** Returns a reader for this InputStream */
@@ -80,7 +80,7 @@ trait ReaderStream extends IOStream[ReaderStream] {
    /** Lazily created sequence of lines in this input stream.  This will refetch lines every time it's iterated over */
    def lines(implicit lineEnding : LineEndingStyle.LineEndingStyle = LineEndingStyle.current_platform_style) : Iterable[String]
    /** Lazily created sequence of characters in this input stream.  This will refetch characters every time it's iterated over */
-   def chars : Iterable[Char]
+   def chars : Iterator[Char]
    /** Eagerly loads the entire stream into memory */
    def slurp : Array[Char]
    /** Blocking call to write the contents of this ReaderStream to the WriterStream. */
@@ -94,7 +94,7 @@ trait ReaderStream extends IOStream[ReaderStream] {
  */
 trait ObjectInputStream extends IOStream[ObjectInputStream] {
    /** Returns an iterable over all the serialized objects in this inputStream. */
-   def objects : Iterable[Any]
+   def objects : Iterator[Any]
    /** Blocking call to read all serialized objects in this input stream and return them in memory */
    def slurp : Array[Any]
    /** Blocking call to serialize the objects from the ObjectInputStream to this stream */                     
